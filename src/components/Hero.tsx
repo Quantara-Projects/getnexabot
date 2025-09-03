@@ -94,8 +94,8 @@ const Hero = () => {
                   </div>
                 </div>
 
-                {/* Bot Typing */}
-                <div className="flex justify-start animate-fade-in-up" style={{ animationDelay: '1s' }}>
+                {/* Bot Typing - Shows first in loop */}
+                <div className="flex justify-start animate-chat-loop-typing">
                   <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%]">
                     <div className="typing-dots">
                       <span></span>
@@ -105,8 +105,8 @@ const Hero = () => {
                   </div>
                 </div>
 
-                {/* Bot Response */}
-                <div className="flex justify-start animate-fade-in-up" style={{ animationDelay: '2.5s' }}>
+                {/* Bot Response - Appears after typing */}
+                <div className="flex justify-start animate-chat-loop-response">
                   <div className="bg-secondary rounded-2xl rounded-bl-md px-4 py-2 max-w-[80%] text-sm">
                     Yes! I'm available 24/7 to help you instantly. What can I assist you with today? 🚀
                   </div>

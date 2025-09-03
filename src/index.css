@@ -246,6 +246,42 @@
   }
 }
 
+@keyframes chatLoopTyping {
+  0%, 25% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  30%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chatLoopResponse {
+  0%, 30% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  35%, 85% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90%, 100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-chat-loop-typing {
+  animation: chatLoopTyping 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-chat-loop-response {
+  animation: chatLoopResponse 4s ease-in-out infinite;
+  animation-delay: 1s;
 }
