@@ -628,7 +628,19 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-3">
+                    {verification && (
+                      <div className="bg-yellow-50 border-yellow-200 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2">Domain Verification Required</h4>
+                        <p className="text-sm text-muted-foreground mb-2">We couldn't verify ownership of <strong>{verification.domain}</strong>. Add the meta tag below into your site's &lt;head&gt; or add as a DNS TXT record, then click Verify.</p>
+                        <pre className="bg-background border rounded p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{`<meta name="nexabot-domain-verification" content="${verification.token}" />`}</pre>
+                        <div className="flex items-center gap-2 mt-3">
+                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard?.writeText(`<meta name=\"nexabot-domain-verification\" content=\"${verification.token}\" />`); toast({ title: 'Copied', description: 'Verification meta tag copied to clipboard.' }); }}>Copy Tag</Button>
+                          <Button size="sm" onClick={() => verifyDomain(verification.domain, verification.token)}>Verify Now</Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 mt-3">
                       <Button variant="outline" onClick={handlePrev} className="w-1/3">Back</Button>
                       <Button onClick={handleNext} className="flex-1 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90" disabled={!canProceedFromStep2}>
                         Configure Settings
