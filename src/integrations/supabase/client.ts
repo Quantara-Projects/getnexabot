@@ -28,10 +28,13 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     }),
     rpc: async () => { error(); },
     auth: {
-      signIn: async () => { error(); },
-      signUp: async () => { error(); },
-      signOut: async () => { error(); },
+      // Methods return non-throwing shapes so calling code can handle absence of a configured Supabase client.
+      signIn: async () => ({ error: new Error('Supabase client not configured') }),
+      signInWithPassword: async () => ({ error: new Error('Supabase client not configured') }),
+      signUp: async () => ({ error: new Error('Supabase client not configured') }),
+      signOut: async () => ({ error: new Error('Supabase client not configured') }),
       getUser: async () => ({ data: null, error: new Error('Supabase client not configured') }),
+      getSession: async () => ({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
     storage: {
