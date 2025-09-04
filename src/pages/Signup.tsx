@@ -1,148 +1,334 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bot, ArrowLeft, Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import CustomCaptcha from '@/components/CustomCaptcha';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signUp, signIn } = useAuth();
+  const { toast } = useToast();
+  
+  const [isLogin, setIsLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
-    businessName: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
+    fullName: '',
+    businessName: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate account creation
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 500);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Error",
+        description: "Email and password are required",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!isLogin && formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!isLogin && formData.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!captchaVerified) {
+      toast({
+        title: "Error",
+        description: "Please complete the security verification",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(formData.email, formData.password);
+        
+        if (error) {
+          toast({
+            title: "Login Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+          setCaptchaReset(prev => prev + 1);
+          setCaptchaVerified(false);
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "Successfully logged in"
+          });
+          navigate('/dashboard');
+        }
+      } else {
+        const { error } = await signUp(formData.email, formData.password, {
+          full_name: formData.fullName,
+          business_name: formData.businessName
+        });
+        
+        if (error) {
+          toast({
+            title: "Signup Failed",
+            description: error.message,
+            variant: "destructive"
+          });
+          setCaptchaReset(prev => prev + 1);
+          setCaptchaVerified(false);
+        } else {
+          toast({
+            title: "Account Created!",
+            description: "Please check your email to verify your account"
+          });
+          navigate('/dashboard');
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+      setCaptchaReset(prev => prev + 1);
+      setCaptchaVerified(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-primary/20 to-violet-500/20 blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-blue-500/20 to-primary/20 blur-3xl"></div>
-      </div>
-
-      <div className="relative w-full max-w-md">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          className="mb-6 text-muted-foreground hover:text-foreground"
-          onClick={() => navigate('/')}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
-
-        <Card className="animate-fade-in-up shadow-xl">
-          <CardHeader className="text-center pb-2">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-gradient-to-r from-primary to-violet-600 p-3 rounded-2xl shadow-glow">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/')}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Home
+              </Button>
             </div>
-            <CardTitle className="text-2xl font-bold">Join NexaBot Beta</CardTitle>
-            <p className="text-muted-foreground">Get instant AI chatbots for your business</p>
+            
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="bg-gradient-to-r from-primary to-violet-600 p-2 rounded-lg">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold">NexaBot</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-md">
+        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl sm:text-3xl font-bold">
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </CardTitle>
+            <CardDescription className="text-base">
+              {isLogin 
+                ? 'Sign in to access your NexaBot dashboard'
+                : 'Start your free beta trial today'
+              }
+            </CardDescription>
           </CardHeader>
           
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+              {/* Email Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={handleChange}
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter your email"
+                    className="pl-10 h-12"
                     required
-                    className="transition-smooth focus:shadow-glow"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    name="businessName"
-                    type="text"
-                    placeholder="Acme Corp"
-                    value={formData.businessName}
-                    onChange={handleChange}
-                    required
-                    className="transition-smooth focus:shadow-glow"
                   />
                 </div>
               </div>
 
+              {/* Sign up specific fields */}
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        placeholder="Enter your full name"
+                        className="pl-10 h-12"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Business Name</label>
+                    <div className="relative">
+                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        type="text"
+                        name="businessName"
+                        value={formData.businessName}
+                        onChange={handleInputChange}
+                        placeholder="Enter your business name"
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="john@acme.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="transition-smooth focus:shadow-glow"
-                />
+                <label className="text-sm font-medium text-foreground">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password"
+                    className="pl-10 pr-10 h-12"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="transition-smooth focus:shadow-glow"
-                />
-              </div>
+              {/* Confirm Password for signup */}
+              {!isLogin && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="Confirm your password"
+                      className="pl-10 h-12"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
-              <Button 
+              {/* Custom Captcha */}
+              <CustomCaptcha 
+                onVerify={setCaptchaVerified}
+                resetTrigger={captchaReset}
+              />
+
+              {/* Submit Button */}
+              <Button
                 type="submit"
                 className="w-full h-12 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white font-semibold shadow-glow transition-smooth"
+                disabled={loading || !captchaVerified}
               >
-                Create Free Account – Beta
+                {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                By signing up, you agree to our{' '}
-                <a href="#" className="text-primary hover:underline">Terms</a> and{' '}
-                <a href="#" className="text-primary hover:underline">Privacy Policy</a>
-              </div>
             </form>
+
+            {/* Toggle between login/signup */}
+            <div className="text-center pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+              </p>
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setCaptchaVerified(false);
+                  setCaptchaReset(prev => prev + 1);
+                  setFormData({
+                    email: '',
+                    password: '',
+                    confirmPassword: '',
+                    fullName: '',
+                    businessName: ''
+                  });
+                }}
+                className="text-primary font-semibold"
+              >
+                {isLogin ? 'Sign up here' : 'Sign in here'}
+              </Button>
+            </div>
+
+            {!isLogin && (
+              <div className="text-xs text-muted-foreground text-center leading-relaxed">
+                By creating an account, you agree to our{' '}
+                <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                {' '}and{' '}
+                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <a href="#" className="text-primary hover:underline font-medium">
-              Sign in
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   );

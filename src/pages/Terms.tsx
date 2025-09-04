@@ -40,7 +40,7 @@ const Terms = () => {
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-            📜 Terms of Service
+            📜 Terms of Service (NexaBot)
           </h1>
           <div className="space-y-2 text-muted-foreground">
             <p><strong>Effective Date:</strong> Processing</p>
