@@ -399,8 +399,9 @@ export function serverApiPlugin(): Plugin {
             }
           }
 
-          // Debug: list stored verification tokens for a domain (DEV ONLY)
+          // Debug: list stored verification tokens for a domain (DEV ONLY) — do NOT expose token plaintext in production
           if (req.url?.startsWith('/api/debug-domain') && (req.method === 'GET' || req.method === 'POST')) {
+            if (process.env.NODE_ENV !== 'development') return endJson(404, { error: 'Not found' });
             // Accept both query param ?domain= or JSON body { domain }
             let domain = '';
             if (req.method === 'GET') {
@@ -410,8 +411,7 @@ export function serverApiPlugin(): Plugin {
             }
             if (!domain) return endJson(400, { error: 'Missing domain' });
             try {
-              const nowIso = new Date().toISOString();
-              const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&select=id,token,token_hash,expires_at,used_at`;
+              const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&select=id,token_hash,expires_at,used_at`;
               const r = await supabaseFetch(q, { method: 'GET' }, req).catch(() => null);
               if (!r || !(r as any).ok) return endJson(200, { tokens: [] });
               const arr = await (r as Response).json().catch(() => []);
