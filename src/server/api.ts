@@ -163,6 +163,98 @@ export function serverApiPlugin(): Plugin {
             return endJson(200, { reply });
           }
 
+          // Custom email verification: send email
+          if (req.url === '/api/send-verify' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const email = String(body?.email || '').trim().toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return endJson(400, { error: 'Invalid email' });
+
+            // Verify authenticated user matches email
+            const ures = await supabaseFetch('/auth/v1/user', { method: 'GET' }, req).catch(() => null);
+            if (!ures || !(ures as any).ok) return endJson(401, { error: 'Unauthorized' });
+            const user = await (ures as Response).json().catch(() => null);
+            if (!user || user.email?.toLowerCase() !== email) return endJson(403, { error: 'Email mismatch' });
+
+            const token = crypto.randomBytes(32).toString('base64url');
+            const secret = process.env.EMAIL_TOKEN_SECRET || 'local-secret';
+            const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
+            const expires = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+
+            // Store token hash (not raw token)
+            await supabaseFetch('/rest/v1/email_verifications', {
+              method: 'POST',
+              headers: { Prefer: 'resolution=merge-duplicates' },
+              body: JSON.stringify({ user_id: user.id, email, token_hash: tokenHash, expires_at: expires, used_at: null }),
+            }, req).catch(() => null);
+
+            // Send email via SMTP
+            const host = process.env.SMTP_HOST;
+            const port = Number(process.env.SMTP_PORT || 587);
+            const userSmtp = process.env.SMTP_USER;
+            const passSmtp = process.env.SMTP_PASS;
+            const from = process.env.EMAIL_FROM || 'NexaBot <no-reply@nexabot.ai>';
+            const appUrl = process.env.APP_URL || 'http://localhost:3000';
+            const verifyUrl = `${appUrl}/api/verify-email?token=${token}`;
+
+            if (host && userSmtp && passSmtp) {
+              const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: userSmtp, pass: passSmtp } });
+              const html = `
+                <table style="width:100%;background:#f6f8fb;padding:24px;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f172a">
+                  <tr><td align="center">
+                    <table style="max-width:560px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                      <tr>
+                        <td style="background:linear-gradient(90deg,#6366f1,#8b5cf6);padding:20px;color:#fff;font-size:18px;font-weight:700">
+                          NexaBot
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:24px">
+                          <h1 style="margin:0 0 8px 0;font-size:20px;color:#111827">Confirm your email</h1>
+                          <p style="margin:0 0 16px 0;color:#374151;line-height:1.5">Hi, please confirm your email address to secure your NexaBot account and complete setup.</p>
+                          <p style="margin:0 0 16px 0;color:#374151;line-height:1.5">This link expires in 24 hours.</p>
+                          <a href="${verifyUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600">Verify Email</a>
+                          <p style="margin:16px 0 0 0;color:#6b7280;font-size:12px">If the button doesn’t work, copy and paste this link into your browser:<br>${verifyUrl}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:16px 24px;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">© ${new Date().getFullYear()} NexaBot. All rights reserved.</td>
+                      </tr>
+                    </table>
+                  </td></tr>
+                </table>`;
+              await transporter.sendMail({ to: email, from, subject: 'Verify your email for NexaBot', html });
+            } else {
+              console.warn('[email] SMTP not configured; verification URL:', verifyUrl);
+            }
+
+            return endJson(200, { ok: true });
+          }
+
+          // Verify link endpoint
+          if (req.url?.startsWith('/api/verify-email') && req.method === 'GET') {
+            const urlObj = new URL(req.url, 'http://local');
+            const token = urlObj.searchParams.get('token') || '';
+            if (!token) {
+              res.statusCode = 400;
+              res.setHeader('Content-Type', 'text/html');
+              return res.end('<p>Invalid token</p>');
+            }
+            const secret = process.env.EMAIL_TOKEN_SECRET || 'local-secret';
+            const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
+
+            // Mark as used if valid and not expired
+            const nowIso = new Date().toISOString();
+            await supabaseFetch('/rest/v1/email_verifications?token_hash=eq.' + encodeURIComponent(tokenHash) + '&used_at=is.null&expires_at=gt.' + encodeURIComponent(nowIso), {
+              method: 'PATCH',
+              body: JSON.stringify({ used_at: nowIso }),
+              headers: { Prefer: 'return=representation' },
+            }, req).catch(() => null);
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'text/html');
+            return res.end(`<!doctype html><meta http-equiv="refresh" content="2;url=/"><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#111827;display:grid;place-items:center;height:100vh}</style><div><h1>✅ Email verified</h1><p>You can close this tab.</p></div>`);
+          }
+
           return endJson(404, { error: 'Not Found' });
         } catch (e: any) {
           return endJson(500, { error: 'Server Error' });
