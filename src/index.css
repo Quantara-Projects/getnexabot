@@ -185,6 +185,14 @@
   .animate-bounce-in {
     animation: bounceIn 0.8s ease-out;
   }
+
+  /* Live preview animations */
+  .preview-anim { will-change: transform, opacity; }
+  .preview-anim-fade { animation: previewFade 220ms ease-out; }
+  .preview-anim-slide-up { animation: previewSlideUp 240ms ease-out; }
+  .preview-anim-slide-left { animation: previewSlideLeft 260ms ease-out; }
+  .preview-anim-zoom { animation: previewZoom 200ms ease-out; }
+  .preview-anim-bounce { animation: bounceIn 400ms ease-out; }
 }
 
 @layer utilities {
