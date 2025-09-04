@@ -663,7 +663,7 @@ const Dashboard = () => {
                         <p className="text-sm text-muted-foreground mb-2">We couldn't verify ownership of <strong>{verification.domain}</strong>. Add the meta tag below into your site's &lt;head&gt; or add as a DNS TXT record, then click Verify.</p>
                         <pre className="bg-background border rounded p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{`<meta name="nexabot-domain-verification" content="${verification.token}" />`}</pre>
                         <div className="flex items-center gap-2 mt-3">
-                          <Button size="sm" variant="outline" onClick={() => { navigator.clipboard?.writeText(`<meta name=\"nexabot-domain-verification\" content=\"${verification.token}\" />`); toast({ title: 'Copied', description: 'Verification meta tag copied to clipboard.' }); }}>Copy Tag</Button>
+                          <Button size="sm" variant="outline" onClick={async () => { const text = `<meta name=\"nexabot-domain-verification\" content=\"${verification.token}\" />`; const ok = await copyToClipboard(text); if (ok) toast({ title: 'Copied', description: 'Verification meta tag copied to clipboard.' }); else toast({ title: 'Copy failed', description: 'Clipboard blocked — paste manually into your site header.', variant: 'destructive' }); }}>Copy Tag</Button>
                           <Button size="sm" onClick={() => verifyDomain(verification.domain, verification.token)}>Verify Now</Button>
                           <Button size="sm" variant="ghost" onClick={async () => {
                             setDebugLoading(true);
