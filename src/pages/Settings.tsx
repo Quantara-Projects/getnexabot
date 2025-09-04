@@ -489,10 +489,10 @@ const Settings = () => {
                           </div>
                         </div>
                         <Button
-                          variant="outline"
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleDeleteFile(file.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className=""
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
@@ -509,7 +509,7 @@ const Settings = () => {
                   </div>
 
                   <div className="mt-6 pt-6 border-t">
-                    <Button className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white">
+                    <Button variant="default" className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white">
                       <Upload className="w-4 h-4 mr-2" />
                       Upload New Training Data
                     </Button>
@@ -532,7 +532,7 @@ const Settings = () => {
                         This will remove all uploaded files and reset your chatbot
                       </p>
                     </div>
-                    <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                    <Button variant="destructive" className="">
                       Delete All Data
                     </Button>
                   </div>
@@ -544,7 +544,7 @@ const Settings = () => {
                         Permanently delete your account and all associated data
                       </p>
                     </div>
-                    <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                    <Button variant="destructive" className="">
                       Delete Account
                     </Button>
                   </div>
