@@ -207,32 +207,19 @@ async function ensureDomainVerification(domain: string, req: any) {
     }
   } catch {}
 
-  // Check for existing non-expired verification token
-  try {
-    const nowIso = new Date().toISOString();
-    const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&expires_at=gt.${encodeURIComponent(nowIso)}&used_at=is.null`;
-    const r = await supabaseFetch(q, { method: 'GET' }, req).catch(() => null);
-    if (r && (r as any).ok) {
-      const arr = await (r as Response).json().catch(() => []);
-      if (Array.isArray(arr) && arr.length > 0) {
-        const existing = arr[0];
-        if (existing.token) return { verified: false, token: existing.token };
-      }
-    }
-  } catch {}
-
-  // create verification token entry (persist token so user can reuse)
+  // always create a fresh short-lived single-use verification token (do NOT persist plaintext)
   const token = crypto.randomBytes(16).toString('base64url');
   const secret = process.env.DOMAIN_VERIFICATION_SECRET || 'local-dom-secret';
   const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
-  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+  const expires = new Date(Date.now() + 1000 * 60 * 60).toISOString();
   try {
     await supabaseFetch('/rest/v1/domain_verifications', {
       method: 'POST',
-      body: JSON.stringify({ domain, token, token_hash: tokenHash, expires_at: expires, used_at: null }),
+      body: JSON.stringify({ domain, token_hash: tokenHash, expires_at: expires, used_at: null }),
       headers: { Prefer: 'resolution=merge-duplicates', 'Content-Type': 'application/json' },
     }, req).catch(() => null);
   } catch {}
+  // Return the plaintext token to the caller so they can place it in their site, but do not store it in DB
   return { verified: false, token };
 }
 
