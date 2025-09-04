@@ -1,14 +1,14 @@
-import { CheckCircle, Zap, Shield, LineChart, Puzzle, Sparkles } from 'lucide-react';
+import { Bot, FileText, GraduationCap, MessageSquare, Shield, Palette } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Reveal } from '@/hooks/use-in-view';
 
 const features = [
-  { icon: Zap, title: 'Instant Replies', desc: 'AI responds to customers in milliseconds, 24/7.' },
-  { icon: Shield, title: 'Secure by Design', desc: 'Best practices for data protection and privacy.' },
-  { icon: LineChart, title: 'Actionable Analytics', desc: 'Track conversations, leads, and satisfaction.' },
-  { icon: Puzzle, title: 'Easy Integrations', desc: 'Works with your website and channels.' },
-  { icon: Sparkles, title: 'Custom Training', desc: 'Feed your FAQs, docs, and site content.' },
-  { icon: CheckCircle, title: 'Lead Capture', desc: 'Collect emails and route complex issues.' },
+  { icon: MessageSquare, title: 'AI Chat Assistant', desc: 'Have natural conversations to brainstorm, write, or debug.' },
+  { icon: FileText, title: 'Document Analyzer', desc: 'Upload files or paste text and receive structured insights.' },
+  { icon: GraduationCap, title: 'Custom Bot Training', desc: 'Train your NexoBot with your company’s knowledge base.' },
+  { icon: MessageSquare, title: 'Omnichannel Support', desc: 'Deploy across website, Slack, WhatsApp, and more.' },
+  { icon: Shield, title: 'Security by Design', desc: 'End-to-end encryption, GDPR compliance, strict data policies.' },
+  { icon: Palette, title: 'Customizable UI', desc: 'Personalize appearance, greeting, and personality.' },
 ];
 
 const FeaturesSection = () => {
@@ -16,8 +16,8 @@ const FeaturesSection = () => {
     <section id="features" className="py-20 bg-background">
       <div className="container mx-auto px-6">
         <Reveal className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-4">Powerful Features</h2>
-          <p className="text-xl text-muted-foreground">Everything you need to support customers at scale.</p>
+          <h2 className="text-4xl lg:text-5xl font-bold mb-4">Features</h2>
+          <p className="text-xl text-muted-foreground">NexoBot isn’t just an AI chatbot—it’s a platform designed to adapt to your workflow.</p>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
