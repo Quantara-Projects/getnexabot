@@ -1,36 +1,36 @@
 import { Bot, Mail, MessageSquare, Twitter, Linkedin, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Footer = () => {
   const navigate = useNavigate();
 
   const footerLinks = {
     Product: [
-      { name: 'Features', href: '#' },
-      { name: 'Pricing', href: '#' },
-      { name: 'Demo', href: '#' },
-      { name: 'Integrations', href: '#' }
+      { name: 'Features', to: '/features' },
+      { name: 'Pricing', to: '/pricing' },
+      { name: 'Demo', to: '/demo' },
+      { name: 'Integrations', to: '/integrations' }
     ],
     Company: [
-      { name: 'About', href: '#' },
-      { name: 'Blog', href: '#' },
-      { name: 'Careers', href: '#' },
-      { name: 'Contact', href: '#' }
+      { name: 'About', to: '/about' },
+      { name: 'Blog', to: '/blog' },
+      { name: 'Careers', to: '/careers' },
+      { name: 'Contact', to: '/contact' }
     ],
     Legal: [
-      { name: 'Privacy Policy', href: '#' },
-      { name: 'Terms of Service', href: '#' },
-      { name: 'Cookie Policy', href: '#' },
-      { name: 'GDPR', href: '#' }
+      { name: 'Privacy Policy', to: '/privacy' },
+      { name: 'Terms of Service', to: '/terms' },
+      { name: 'Cookie Policy', to: '/cookies' },
+      { name: 'GDPR', to: '/gdpr' }
     ],
     Support: [
-      { name: 'Help Center', href: '#' },
-      { name: 'API Docs', href: '#' },
-      { name: 'Status', href: '#' },
-      { name: 'Community', href: '#' }
+      { name: 'Help Center', to: '/help' },
+      { name: 'API Docs', to: '/api' },
+      { name: 'Status', to: '/status' },
+      { name: 'Community', to: '/community' }
     ]
-  };
+  } as const;
 
   const socialLinks = [
     { icon: Twitter, href: '#', label: 'Twitter' },
