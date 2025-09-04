@@ -14,13 +14,220 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      captcha_attempts: {
+        Row: {
+          attempts: number | null
+          blocked_until: string | null
+          id: string
+          ip_address: unknown
+          last_attempt: string | null
+          session_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          blocked_until?: string | null
+          id?: string
+          ip_address: unknown
+          last_attempt?: string | null
+          session_id: string
+        }
+        Update: {
+          attempts?: number | null
+          blocked_until?: string | null
+          id?: string
+          ip_address?: unknown
+          last_attempt?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
+      chatbot_configs: {
+        Row: {
+          bot_name: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          messenger_connected: boolean | null
+          training_status: string | null
+          updated_at: string | null
+          user_id: string
+          website_connected: boolean | null
+          welcome_message: string | null
+          whatsapp_connected: boolean | null
+        }
+        Insert: {
+          bot_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          messenger_connected?: boolean | null
+          training_status?: string | null
+          updated_at?: string | null
+          user_id: string
+          website_connected?: boolean | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Update: {
+          bot_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          messenger_connected?: boolean | null
+          training_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website_connected?: boolean | null
+          welcome_message?: string | null
+          whatsapp_connected?: boolean | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          success: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      uploaded_files: {
+        Row: {
+          file_path: string
+          file_size: number
+          file_type: string
+          filename: string
+          id: string
+          upload_date: string | null
+          user_id: string
+        }
+        Insert: {
+          file_path: string
+          file_size: number
+          file_type: string
+          filename: string
+          id?: string
+          upload_date?: string | null
+          user_id: string
+        }
+        Update: {
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          filename?: string
+          id?: string
+          upload_date?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          setup_completed: boolean | null
+          theme_primary_color: string | null
+          theme_secondary_color: string | null
+          updated_at: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          setup_completed?: boolean | null
+          theme_primary_color?: string | null
+          theme_secondary_color?: string | null
+          updated_at?: string | null
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          setup_completed?: boolean | null
+          theme_primary_color?: string | null
+          theme_secondary_color?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_security_event: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_ip_address: unknown
+          p_success: boolean
+          p_user_agent: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
