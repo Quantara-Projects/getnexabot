@@ -333,7 +333,16 @@ export function serverApiPlugin(): Plugin {
               headers: { Prefer: 'resolution=merge-duplicates' },
             }, req).catch(() => null);
 
-            return endJson(200, { botId });
+            // Create widget token (HMAC signed)
+            const widgetPayload = { botId, domain, iat: Math.floor(Date.now()/1000) };
+            const widgetSecret = process.env.WIDGET_TOKEN_SECRET || 'local-widget-secret';
+            const header = { alg: 'HS256', typ: 'JWT' };
+            const b64 = (s: string) => Buffer.from(s).toString('base64url');
+            const unsigned = b64(JSON.stringify(header)) + '.' + b64(JSON.stringify(widgetPayload));
+            const sig = crypto.createHmac('sha256', widgetSecret).update(unsigned).digest('base64url');
+            const widgetToken = unsigned + '.' + sig;
+
+            return endJson(200, { botId, widgetToken });
           }
 
           if (req.url === '/api/verify-domain' && req.method === 'POST') {
