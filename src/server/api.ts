@@ -221,6 +221,20 @@ async function ensureDomainVerification(domain: string, req: any) {
   return { verified: false, token };
 }
 
+function verifyWidgetToken(token: string) {
+  try {
+    const widgetSecret = process.env.WIDGET_TOKEN_SECRET || 'local-widget-secret';
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const unsigned = parts[0] + '.' + parts[1];
+    const sig = parts[2];
+    const expected = crypto.createHmac('sha256', widgetSecret).update(unsigned).digest('base64url');
+    if (sig !== expected) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return payload;
+  } catch (e) { return null; }
+}
+
 // Simple in-memory rate limiter
 const rateMap = new Map<string, { count: number; ts: number }>();
 function rateLimit(key: string, limit: number, windowMs: number) {
@@ -343,6 +357,23 @@ export function serverApiPlugin(): Plugin {
             const widgetToken = unsigned + '.' + sig;
 
             return endJson(200, { botId, widgetToken });
+          }
+
+          // Widget config endpoint: returns bot settings for widget consumers (requires token)
+          if (req.url?.startsWith('/api/widget-config') && req.method === 'GET') {
+            const urlObj = new URL(req.url, 'http://local');
+            const botId = urlObj.searchParams.get('botId') || '';
+            const token = urlObj.searchParams.get('token') || '';
+            if (!botId) return endJson(400, { error: 'Missing botId' });
+            const payload = verifyWidgetToken(token);
+            if (!payload || payload.botId !== botId) return endJson(401, { error: 'Invalid token' });
+            try {
+              const r = await supabaseFetch('/rest/v1/chatbot_configs?bot_id=eq.' + encodeURIComponent(botId) + '&select=*', { method: 'GET' }, req).catch(() => null);
+              if (!r || !(r as any).ok) return endJson(404, { error: 'Not found' });
+              const data = await (r as Response).json().catch(() => []);
+              const cfg = Array.isArray(data) && data.length > 0 ? data[0] : { settings: {} };
+              return endJson(200, { settings: cfg });
+            } catch (e) { return endJson(500, { error: 'Server error' }); }
           }
 
           if (req.url === '/api/verify-domain' && req.method === 'POST') {
