@@ -8,40 +8,84 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as strin
 let _supabase: any;
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  // Avoid throwing at module initialization when env vars are missing (e.g. local dev without supabase configured).
-  // Provide a lightweight stub that surfaces a helpful error when used.
-  console.warn('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Supabase client is disabled.');
+  // Dev-friendly stub: avoid crashing, and provide a simple local auth simulation for development.
+  console.warn('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Using local dev supabase stub.');
 
-  const error = () => {
-    throw new Error('Supabase client not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
-  };
+  const subscribers: Array<(event: string, session: any) => void> = [];
+  const SESSION_KEY = 'dev_supabase_session';
 
-  // Minimal stub covering common usage patterns (from(), auth)
+  function getStoredSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+  function setStoredSession(session: any) {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch {}
+  }
+  function clearStoredSession() {
+    try { localStorage.removeItem(SESSION_KEY); } catch {}
+  }
+
   const supabaseStub: any = {
     from: () => ({
-      select: async () => { error(); },
-      insert: async () => { error(); },
-      update: async () => { error(); },
-      delete: async () => { error(); },
-      upsert: async () => { error(); },
-      eq: () => ({ select: async () => { error(); } }),
+      select: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
+      insert: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
+      update: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
+      delete: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
+      upsert: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
+      eq: () => ({ select: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }) }),
     }),
-    rpc: async () => { error(); },
+    rpc: async () => ({ data: null, error: new Error('Supabase client not configured (stub)') }),
     auth: {
-      // Methods return non-throwing shapes so calling code can handle absence of a configured Supabase client.
-      signIn: async () => ({ error: new Error('Supabase client not configured') }),
-      signInWithPassword: async () => ({ error: new Error('Supabase client not configured') }),
-      signUp: async () => ({ error: new Error('Supabase client not configured') }),
-      signOut: async () => ({ error: new Error('Supabase client not configured') }),
-      getUser: async () => ({ data: null, error: new Error('Supabase client not configured') }),
-      getSession: async () => ({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signIn: async () => ({ error: new Error('Supabase client not configured (stub)') }),
+      signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
+        // Very simple dev auth: accept any non-empty email/password and create a session
+        if (!email || !password) return { error: new Error('Email and password required') };
+        const user = { id: `dev_${btoa(email).slice(0, 10)}`, email, user_metadata: {} };
+        const session = { access_token: 'dev-token', user };
+        setStoredSession(session);
+        subscribers.forEach((s) => s('SIGNED_IN', session));
+        return { data: { user, session }, error: null };
+      },
+      signUp: async ({ email, password, options }: any) => {
+        if (!email || !password) return { error: new Error('Email and password required') };
+        const user = { id: `dev_${btoa(email).slice(0, 10)}`, email, user_metadata: options?.data || {} };
+        const session = { access_token: 'dev-token', user };
+        setStoredSession(session);
+        subscribers.forEach((s) => s('SIGNED_IN', session));
+        return { data: { user, session }, error: null };
+      },
+      signOut: async () => {
+        const session = getStoredSession();
+        clearStoredSession();
+        subscribers.forEach((s) => s('SIGNED_OUT', null));
+        return { error: null };
+      },
+      getUser: async () => {
+        const s = getStoredSession();
+        return { data: s ? { user: s.user } : null, error: null };
+      },
+      getSession: async () => {
+        const s = getStoredSession();
+        return { data: { session: s }, error: null };
+      },
+      onAuthStateChange: (cb: (event: string, session: any) => void) => {
+        subscribers.push(cb);
+        // call immediately with current session
+        const s = getStoredSession();
+        setTimeout(() => cb(s ? 'SIGNED_IN' : 'SIGNED_OUT', s), 0);
+        return { data: { subscription: { unsubscribe: () => {
+          const idx = subscribers.indexOf(cb);
+          if (idx >= 0) subscribers.splice(idx, 1);
+        } } } };
+      },
     },
     storage: {
       from: () => ({
-        upload: async () => { error(); },
-        download: async () => { error(); },
-        remove: async () => { error(); },
+        upload: async () => ({ data: null, error: new Error('Supabase storage not configured (stub)') }),
+        download: async () => ({ data: null, error: new Error('Supabase storage not configured (stub)') }),
+        remove: async () => ({ data: null, error: new Error('Supabase storage not configured (stub)') }),
       }),
     },
   };
