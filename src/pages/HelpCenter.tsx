@@ -21,10 +21,21 @@ const HelpCenter = () => {
       <div className="container mx-auto px-6 py-10">
         <Card>
           <CardHeader>
-            <CardTitle>FAQs</CardTitle>
+            <CardTitle>Help Center</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Get help with setup, integrations, and troubleshooting. For further assistance, contact hello@nexabot.ai.</p>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>The Help Center is your go-to resource for quick answers and tutorials.</p>
+            <div>
+              <h3 className="font-semibold mb-2">Popular Topics</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Getting Started – Creating an account, setting up your first bot.</li>
+                <li>Account & Billing – Managing subscriptions, invoices, and upgrades.</li>
+                <li>Bot Training – Uploading documents and customizing your AI.</li>
+                <li>Integrations – Adding NexoBot to Slack, Discord, or your website.</li>
+                <li>Security & Privacy – How we protect your data.</li>
+              </ul>
+            </div>
+            <p>If you don’t find your answer, our support team is one click away.</p>
           </CardContent>
         </Card>
       </div>
