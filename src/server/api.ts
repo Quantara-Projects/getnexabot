@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 // Small JSON body parser with size limit
 async function parseJson(req: any, limit = 1024 * 100) {
