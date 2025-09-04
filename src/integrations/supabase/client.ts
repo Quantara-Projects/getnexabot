@@ -32,7 +32,7 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       signUp: async () => { error(); },
       signOut: async () => { error(); },
       getUser: async () => ({ data: null, error: new Error('Supabase client not configured') }),
-      onAuthStateChange: () => ({ data: null, subscription: { unsubscribe: () => {} } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
     storage: {
       from: () => ({
