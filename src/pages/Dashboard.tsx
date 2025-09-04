@@ -636,7 +636,22 @@ const Dashboard = () => {
                         <div className="flex items-center gap-2 mt-3">
                           <Button size="sm" variant="outline" onClick={() => { navigator.clipboard?.writeText(`<meta name=\"nexabot-domain-verification\" content=\"${verification.token}\" />`); toast({ title: 'Copied', description: 'Verification meta tag copied to clipboard.' }); }}>Copy Tag</Button>
                           <Button size="sm" onClick={() => verifyDomain(verification.domain, verification.token)}>Verify Now</Button>
+                          <Button size="sm" variant="ghost" onClick={async () => {
+                            setDebugLoading(true);
+                            setDebugHtml(null);
+                            try {
+                              const res = await fetch('/api/debug-fetch', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ url: (state.websiteUrl || '').trim() }) });
+                              const j = await res.json().catch(()=>({}));
+                              if (res.ok) setDebugHtml(j.snippet || ''); else setDebugHtml('Fetch failed: ' + (j.error || j.message || 'unknown'));
+                            } catch (e) { setDebugHtml('Error: ' + String(e)); }
+                            setDebugLoading(false);
+                          }}>{debugLoading ? 'Checking…' : 'Show Fetched HTML'}</Button>
                         </div>
+                        {debugHtml !== null && (
+                          <div className="mt-3 bg-background border rounded p-3 max-h-64 overflow-auto text-xs">
+                            <pre className="whitespace-pre-wrap">{debugHtml}</pre>
+                          </div>
+                        )}
                       </div>
                     )}
 
