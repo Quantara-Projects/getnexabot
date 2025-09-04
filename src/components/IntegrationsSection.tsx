@@ -1,12 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Globe, MessageSquare, Smartphone } from 'lucide-react';
+import { Globe, Slack, Github, FileText, MessagesSquare, PlugZap, Zap } from 'lucide-react';
 import { Reveal } from '@/hooks/use-in-view';
-
-const items = [
-  { icon: Globe, title: 'Website Chat', desc: 'Embed a modern chat widget on your site', badge: 'Available' },
-  { icon: MessageSquare, title: 'WhatsApp', desc: 'Business API integration', badge: 'Coming Soon' },
-  { icon: Smartphone, title: 'Messenger', desc: 'Facebook Pages integration', badge: 'Coming Soon' },
-];
 
 const IntegrationsSection = () => {
   return (
@@ -14,25 +8,36 @@ const IntegrationsSection = () => {
       <div className="container mx-auto px-6">
         <Reveal className="text-center mb-12">
           <h2 className="text-4xl lg:text-5xl font-bold mb-4">Integrations</h2>
-          <p className="text-xl text-muted-foreground">Connect NexaBot to your preferred channels.</p>
+          <p className="text-xl text-muted-foreground">NexoBot works where you work. Bring intelligent assistance into your daily tools.</p>
         </Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map((it, i) => (
-            <Reveal key={i}>
-              <Card className="h-full border-2 hover:border-primary transition-smooth">
-                <CardHeader className="flex flex-row items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <it.icon className="w-5 h-5" />
-                  </div>
-                  <CardTitle>{it.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{it.desc}</p>
-                  <div className="mt-3 inline-block px-2 py-1 text-xs rounded bg-secondary">{it.badge}</div>
-                </CardContent>
-              </Card>
-            </Reveal>
-          ))}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Reveal>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Current Integrations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-muted-foreground">
+                <div className="flex items-start space-x-3"><Globe className="w-5 h-5 text-primary mt-0.5" /><p>Website Chat Widget – Add a smart AI assistant to your website in minutes.</p></div>
+                <div className="flex items-start space-x-3"><Slack className="w-5 h-5 text-primary mt-0.5" /><p>Slack & Discord – Bring AI into team communication.</p></div>
+                <div className="flex items-start space-x-3"><FileText className="w-5 h-5 text-primary mt-0.5" /><p>Google Docs & Notion – Use NexoBot as your editor and idea generator.</p></div>
+                <div className="flex items-start space-x-3"><Github className="w-5 h-5 text-primary mt-0.5" /><p>GitHub & GitLab – Get coding help and explanations inside your repos.</p></div>
+              </CardContent>
+            </Card>
+          </Reveal>
+
+          <Reveal>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>Coming Soon</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-muted-foreground">
+                <div className="flex items-start space-x-3"><MessagesSquare className="w-5 h-5 text-primary mt-0.5" /><p>WhatsApp & Messenger Bots – Automate customer engagement.</p></div>
+                <div className="flex items-start space-x-3"><PlugZap className="w-5 h-5 text-primary mt-0.5" /><p>CRM Systems – Enrich customer data with AI insights.</p></div>
+                <div className="flex items-start space-x-3"><Zap className="w-5 h-5 text-primary mt-0.5" /><p>Zapier Integration – Connect NexoBot with 3,000+ apps.</p></div>
+              </CardContent>
+            </Card>
+          </Reveal>
         </div>
       </div>
     </section>
