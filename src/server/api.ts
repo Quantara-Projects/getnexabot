@@ -212,15 +212,21 @@ async function ensureDomainVerification(domain: string, req: any) {
   const secret = process.env.DOMAIN_VERIFICATION_SECRET || 'local-dom-secret';
   const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
   const expires = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+  let createdId: string | null = null;
   try {
-    await supabaseFetch('/rest/v1/domain_verifications', {
+    const res = await supabaseFetch('/rest/v1/domain_verifications', {
       method: 'POST',
       body: JSON.stringify({ domain, token_hash: tokenHash, expires_at: expires, used_at: null }),
-      headers: { Prefer: 'resolution=merge-duplicates', 'Content-Type': 'application/json' },
+      headers: { Prefer: 'return=representation', 'Content-Type': 'application/json' },
     }, req).catch(() => null);
+    if (res && (res as any).ok) {
+      const j = await (res as Response).json().catch(() => null);
+      if (Array.isArray(j) && j.length > 0 && j[0].id) createdId = j[0].id;
+      else if (j && j.id) createdId = j.id;
+    }
   } catch {}
-  // Return the plaintext token to the caller so they can place it in their site, but do not store it in DB
-  return { verified: false, token };
+  // Return the plaintext token and its DB id to the caller so they can place it in their site, but do not persist plaintext
+  return { verified: false, token, tokenId: createdId };
 }
 
 function verifyWidgetToken(token: string) {
