@@ -303,6 +303,46 @@ const Dashboard = () => {
     }
   };
 
+  // Saving customization locally and attempting to persist to backend
+  const [saving, setSaving] = useState(false);
+  const saveCustomization = async () => {
+    setSaving(true);
+    try {
+      // Persist to local storage
+      try {
+        const stored = localStorage.getItem('wizard_state');
+        const parsed = stored ? JSON.parse(stored) : {};
+        parsed.customization = state.customization;
+        localStorage.setItem('wizard_state', JSON.stringify(parsed));
+      } catch {}
+
+      // Try to persist to backend via the launch endpoint which upserts settings
+      const payload = {
+        botId: state.botId,
+        customization: state.customization,
+        channel: state.selectedChannel || 'website',
+      };
+
+      const res = await fetch('/api/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => ({ ok: false } as any));
+
+      if (res && (res as any).ok) {
+        toast({ title: 'Saved', description: 'Customization saved successfully.' });
+        const data = await (res as Response).json().catch(() => ({}));
+        if (data?.botId) setState((s) => ({ ...s, botId: data.botId }));
+      } else {
+        toast({ title: 'Saved locally', description: 'Customization saved locally. Backend unavailable.', variant: 'warning' as any });
+      }
+    } catch (e) {
+      toast({ title: 'Save failed', description: 'Could not save customization. Try again.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const copyEmbed = async () => {
     if (!state.embedCode) return;
     try {
