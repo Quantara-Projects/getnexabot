@@ -170,6 +170,8 @@ export function serverApiPlugin(): Plugin {
           }
 
           if (req.url === '/api/chat' && req.method === 'POST') {
+            const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
+            if (!rateLimit('chat:' + ip, 60, 60_000)) return endJson(429, { error: 'Too Many Requests' });
             const body = await parseJson(req).catch(() => ({}));
             const message = String(body?.message || '').slice(0, 2000);
             if (!message) return endJson(400, { error: 'Empty message' });
