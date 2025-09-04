@@ -341,8 +341,8 @@ export function serverApiPlugin(): Plugin {
             // Ensure domain verification
             const vres = await ensureDomainVerification(domain, req);
             if (!vres.verified) {
-              // return verification required and instructions
-              return endJson(202, { status: 'verification_required', instructions: `Add a DNS TXT record or a meta tag with token: ${vres.token}`, token: vres.token });
+              // return verification required and instructions (include token id)
+              return endJson(202, { status: 'verification_required', instructions: `Add a DNS TXT record or a meta tag with token: ${vres.token}`, token: vres.token, tokenId: vres.tokenId || null });
             }
 
             const seed = domain + '|' + (req.headers['authorization'] || '');
