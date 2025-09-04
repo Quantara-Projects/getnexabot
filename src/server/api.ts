@@ -187,6 +187,8 @@ export function serverApiPlugin(): Plugin {
 
           // Custom email verification: send email
           if (req.url === '/api/send-verify' && req.method === 'POST') {
+            const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
+            if (!rateLimit('verify:' + ip, 5, 60*60_000)) return endJson(429, { error: 'Too Many Requests' });
             const body = await parseJson(req).catch(() => ({}));
             const email = String(body?.email || '').trim().toLowerCase();
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return endJson(400, { error: 'Invalid email' });
