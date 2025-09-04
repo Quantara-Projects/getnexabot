@@ -68,6 +68,159 @@ function makeBotId(seed: string) {
   return 'bot_' + crypto.createHash('sha256').update(seed).digest('base64url').slice(0, 22);
 }
 
+// Extract visible text from HTML (naive)
+function extractTextFromHtml(html: string) {
+  // remove scripts/styles
+  const withoutScripts = html.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, ' ');
+  const withoutStyles = withoutScripts.replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, ' ');
+  // remove tags
+  const text = withoutStyles.replace(/<[^>]+>/g, ' ');
+  // decode HTML entities (basic)
+  return text.replace(/&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;/g, (s) => {
+    switch (s) {
+      case '&nbsp;': return ' ';
+      case '&amp;': return '&';
+      case '&lt;': return '<';
+      case '&gt;': return '>';
+      case '&quot;': return '"';
+      case '&#39;': return '\'';
+      default: return s;
+    }
+  }).replace(/\s+/g, ' ').trim();
+}
+
+async function tryFetchUrlText(u: string) {
+  try {
+    const res = await fetch(u, { headers: { 'User-Agent': 'NexaBotCrawler/1.0' } });
+    if (!res.ok) return '';
+    const html = await res.text();
+    return extractTextFromHtml(html);
+  } catch (e) {
+    return '';
+  }
+}
+
+function chunkText(text: string, maxChars = 1500) {
+  const paragraphs = text.split(/\n|\r|\.|\!|\?/).map(p => p.trim()).filter(Boolean);
+  const chunks: string[] = [];
+  let cur = '';
+  for (const p of paragraphs) {
+    if ((cur + ' ' + p).length > maxChars) {
+      if (cur) { chunks.push(cur.trim()); cur = p; }
+      else { chunks.push(p.slice(0, maxChars)); cur = p.slice(maxChars); }
+    } else {
+      cur = (cur + ' ' + p).trim();
+    }
+  }
+  if (cur) chunks.push(cur.trim());
+  return chunks;
+}
+
+async function embedChunks(chunks: string[]): Promise<number[][] | null> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return null;
+  try {
+    const resp = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: chunks, model: 'text-embedding-3-small' }),
+    });
+    if (!resp.ok) return null;
+    const j = await resp.json();
+    if (!j.data) return null;
+    return j.data.map((d: any) => d.embedding as number[]);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function processTrainJob(jobId: string, body: any, req: any) {
+  const url = body.url || '';
+  const files: string[] = Array.isArray(body.files) ? body.files : [];
+  const botSeed = (url || files.join(',')) + Date.now();
+  const botId = makeBotId(botSeed);
+
+  // gather texts
+  const docs: { source: string; content: string }[] = [];
+
+  if (url) {
+    const text = await tryFetchUrlText(url);
+    if (text) docs.push({ source: url, content: text });
+  }
+
+  // files are storage paths in bucket/training/...
+  for (const path of files) {
+    try {
+      const SUPABASE_URL = process.env.SUPABASE_URL;
+      const bucketPublicUrl = SUPABASE_URL + `/storage/v1/object/public/training/${encodeURIComponent(path)}`;
+      const res = await fetch(bucketPublicUrl);
+      if (!res.ok) continue;
+      const buf = await res.arrayBuffer();
+      // crude text extraction: if it's pdf or text
+      const header = String.fromCharCode.apply(null, new Uint8Array(buf.slice(0, 8)) as any);
+      if (header.includes('%PDF')) {
+        // cannot parse PDF here; store placeholder
+        docs.push({ source: path, content: '(PDF content -- processed externally)' });
+      } else {
+        const text = new TextDecoder().decode(buf);
+        const cleaned = extractTextFromHtml(text);
+        docs.push({ source: path, content: cleaned || '(binary file)' });
+      }
+    } catch (e) { continue; }
+  }
+
+  // chunk and embed
+  for (const doc of docs) {
+    const chunks = chunkText(doc.content);
+    const embeddings = await embedChunks(chunks);
+
+    // store documents and embeddings in Supabase
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const emb = embeddings ? embeddings[i] : null;
+      try {
+        await supabaseFetch('/rest/v1/training_documents', {
+          method: 'POST',
+          body: JSON.stringify({ bot_id: botId, source: doc.source, content: chunk, embedding: emb }),
+          headers: { Prefer: 'return=representation', 'Content-Type': 'application/json' },
+        }, req).catch(() => null);
+      } catch {}
+    }
+  }
+
+  // mark job in logs
+  try {
+    await supabaseFetch('/rest/v1/security_logs', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'TRAIN_JOB_COMPLETE', details: { jobId, botId, docs: docs.length } }),
+    }, req).catch(() => null);
+  } catch {}
+}
+
+async function ensureDomainVerification(domain: string, req: any) {
+  // check domains table for verified
+  try {
+    const res = await supabaseFetch(`/rest/v1/domains?domain=eq.${encodeURIComponent(domain)}`, { method: 'GET' }, req);
+    if (res && (res as any).ok) {
+      const j = await (res as Response).json().catch(() => []);
+      if (Array.isArray(j) && j.length > 0 && j[0].verified) return { verified: true };
+    }
+  } catch {}
+  // create verification token entry
+  const token = crypto.randomBytes(16).toString('base64url');
+  const secret = process.env.DOMAIN_VERIFICATION_SECRET || 'local-dom-secret';
+  const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
+  const expires = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+  try {
+    await supabaseFetch('/rest/v1/domain_verifications', {
+      method: 'POST',
+      body: JSON.stringify({ domain, token_hash: tokenHash, expires_at: expires }),
+      headers: { Prefer: 'resolution=merge-duplicates', 'Content-Type': 'application/json' },
+    }, req).catch(() => null);
+  } catch {}
+  return { verified: false, token };
+}
+
 // Simple in-memory rate limiter
 const rateMap = new Map<string, { count: number; ts: number }>();
 function rateLimit(key: string, limit: number, windowMs: number) {
@@ -137,6 +290,21 @@ export function serverApiPlugin(): Plugin {
             }, req).catch(() => null);
 
             const jobId = makeBotId((url || '') + Date.now());
+
+            // Start background processing (non-blocking)
+            (async () => {
+              try {
+                await processTrainJob(jobId, { url, files: Array.isArray(body?.files) ? body.files : [] }, req);
+              } catch (e) {
+                try {
+                  await supabaseFetch('/rest/v1/security_logs', {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'TRAIN_JOB_ERROR', details: { jobId, error: String(e?.message || e) } }),
+                  }, req);
+                } catch {}
+              }
+            })();
+
             return endJson(202, { jobId, status: 'queued' });
           }
 
