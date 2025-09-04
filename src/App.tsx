@@ -39,11 +39,6 @@ const App = () => (
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/demo" element={<Demo />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/careers" element={<Careers />} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/gdpr" element={<GDPR />} />
         <Route path="/help" element={<HelpCenter />} />
