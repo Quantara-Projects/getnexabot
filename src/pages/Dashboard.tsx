@@ -48,6 +48,7 @@ type UploadedItem = {
   name: string;
   size: number;
   type: string;
+  file?: File;
 };
 
 type Customization = {
