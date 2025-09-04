@@ -336,6 +336,40 @@ export function serverApiPlugin(): Plugin {
             return endJson(200, { botId });
           }
 
+          if (req.url === '/api/verify-domain' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const domain = String(body?.domain || '').trim();
+            const token = String(body?.token || '').trim();
+            if (!domain || !token) return endJson(400, { error: 'Missing domain or token' });
+
+            // Try fetch homepage to find verification meta tag
+            const candidates = [`https://${domain}`, `http://${domain}`];
+            let found = false;
+            for (const url of candidates) {
+              try {
+                const r = await fetch(url, { headers: { 'User-Agent': 'NexaBotVerifier/1.0' }, timeout: 5000 } as any).catch(() => null);
+                if (!r || !r.ok) continue;
+                const text = await r.text();
+                if (text.includes(`<meta name="nexabot-domain-verification" content="${token}"`) || text.includes(`nexabot-domain-verification:${token}`)) {
+                  found = true;
+                  break;
+                }
+              } catch (e) { continue; }
+            }
+
+            if (!found) return endJson(400, { error: 'Verification token not found on site' });
+
+            try {
+              await supabaseFetch('/rest/v1/domains', {
+                method: 'POST',
+                body: JSON.stringify({ domain, verified: true, verified_at: new Date().toISOString() }),
+                headers: { Prefer: 'resolution=merge-duplicates', 'Content-Type': 'application/json' },
+              }, req).catch(() => null);
+            } catch {}
+
+            return endJson(200, { ok: true, domain });
+          }
+
           if (req.url === '/api/launch' && req.method === 'POST') {
             const body = await parseJson(req);
             const botId = String(body?.botId || '').trim();
