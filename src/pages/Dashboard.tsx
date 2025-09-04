@@ -206,12 +206,36 @@ const Dashboard = () => {
     setState((s) => ({ ...s, training: { inProgress: true, progress: 0, completed: false, error: null } }));
 
     try {
+      // If files are provided, upload them to Supabase storage first
+      const storagePaths: string[] = [];
+      if (hasFiles) {
+        toast({ title: 'Uploading files', description: 'Uploading your files securely...', variant: 'default' });
+        for (const f of state.uploadedFiles) {
+          try {
+            if (!f.file) continue;
+            const folder = `training/${(state.botId || 'anon')}/${Date.now()}`;
+            // sanitize filename
+            const name = encodeURIComponent(f.name.replace(/[^a-zA-Z0-9.\-_%]/g, '_'));
+            const path = `${folder}/${name}`;
+            const result = await supabase.storage.from('training').upload(path, f.file as File, { upsert: true });
+            if (result.error) {
+              console.warn('upload error', result.error);
+              toast({ title: 'Upload failed', description: `${f.name} could not be uploaded.`, variant: 'destructive' });
+              continue;
+            }
+            storagePaths.push(path);
+          } catch (err) {
+            console.warn('upload exception', err);
+          }
+        }
+      }
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       const res = await fetch('/api/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: state.uploadedFiles.map(f=>({ name:f.name, size:f.size, type:f.type })) }),
+        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths }),
         signal: controller.signal,
       }).catch((err) => ({ ok: false, status: 0, error: err } as any));
       clearTimeout(timeout);
@@ -229,7 +253,7 @@ const Dashboard = () => {
       }
 
       setState((s) => ({ ...s, training: { inProgress: false, progress: 100, completed: true, error: null } }));
-      toast({ title: 'Training complete', description: 'Your bot knowledge base is ready.' });
+      toast({ title: 'Training submitted', description: 'Your training job was submitted.' });
     } catch (e: any) {
       setState((s) => ({ ...s, training: { inProgress: false, progress: 0, completed: false, error: 'Training failed' } }));
       toast({ title: 'Training failed', description: 'Please try again.', variant: 'destructive' });
