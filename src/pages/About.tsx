@@ -64,7 +64,7 @@ const About = () => {
                       <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                     </div>
                     <h3 className="font-bold text-lg sm:text-xl">Instant</h3>
-                    <p className="text-sm text-muted-foreground">< 1s Response</p>
+                    <p className="text-sm text-muted-foreground">&lt; 1s Response</p>
                   </div>
                   <div className="text-center">
                     <div className="bg-gradient-to-r from-primary to-violet-600 p-3 sm:p-4 rounded-2xl mx-auto w-fit mb-3">
