@@ -266,13 +266,24 @@ export function serverApiPlugin(): Plugin {
             const secret = process.env.EMAIL_TOKEN_SECRET || 'local-secret';
             const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
 
-            // Mark as used if valid and not expired
-            const nowIso = new Date().toISOString();
-            await supabaseFetch('/rest/v1/email_verifications?token_hash=eq.' + encodeURIComponent(tokenHash) + '&used_at=is.null&expires_at=gt.' + encodeURIComponent(nowIso), {
-              method: 'PATCH',
-              body: JSON.stringify({ used_at: nowIso }),
-              headers: { Prefer: 'return=representation' },
-            }, req).catch(() => null);
+            // Prefer RPC (security definer) on DB: verify_email_hash(p_hash text)
+            let ok = false;
+            try {
+              const rpc = await supabaseFetch('/rest/v1/rpc/verify_email_hash', {
+                method: 'POST',
+                body: JSON.stringify({ p_hash: tokenHash }),
+              }, req);
+              if (rpc && (rpc as any).ok) ok = true;
+            } catch {}
+
+            if (!ok) {
+              const nowIso = new Date().toISOString();
+              await supabaseFetch('/rest/v1/email_verifications?token_hash=eq.' + encodeURIComponent(tokenHash) + '&used_at=is.null&expires_at=gt.' + encodeURIComponent(nowIso), {
+                method: 'PATCH',
+                body: JSON.stringify({ used_at: nowIso }),
+                headers: { Prefer: 'return=representation' },
+              }, req).catch(() => null);
+            }
 
             res.statusCode = 200;
             res.setHeader('Content-Type', 'text/html');
