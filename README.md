@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# NexaBot - AI Chatbots for 24/7 Customer Support
 
 ## Project info
 
