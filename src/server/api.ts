@@ -412,6 +412,28 @@ export function serverApiPlugin(): Plugin {
             }
           }
 
+          // Debug: list stored verification tokens for a domain (DEV ONLY)
+          if (req.url?.startsWith('/api/debug-domain') && (req.method === 'GET' || req.method === 'POST')) {
+            // Accept both query param ?domain= or JSON body { domain }
+            let domain = '';
+            if (req.method === 'GET') {
+              try { const u = new URL(req.url, 'http://local'); domain = u.searchParams.get('domain') || ''; } catch {}
+            } else {
+              const b = await parseJson(req).catch(() => ({})); domain = String(b?.domain || '');
+            }
+            if (!domain) return endJson(400, { error: 'Missing domain' });
+            try {
+              const nowIso = new Date().toISOString();
+              const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&select=id,token,token_hash,expires_at,used_at`;
+              const r = await supabaseFetch(q, { method: 'GET' }, req).catch(() => null);
+              if (!r || !(r as any).ok) return endJson(200, { tokens: [] });
+              const arr = await (r as Response).json().catch(() => []);
+              return endJson(200, { tokens: Array.isArray(arr) ? arr : [] });
+            } catch (e) {
+              return endJson(500, { error: 'Server error' });
+            }
+          }
+
           if (req.url === '/api/verify-domain' && req.method === 'POST') {
             const body = await parseJson(req).catch(() => ({}));
             const domain = String(body?.domain || '').trim();
