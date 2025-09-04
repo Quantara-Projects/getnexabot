@@ -62,6 +62,22 @@ function makeBotId(seed: string) {
   return 'bot_' + crypto.createHash('sha256').update(seed).digest('base64url').slice(0, 22);
 }
 
+// Simple in-memory rate limiter
+const rateMap = new Map<string, { count: number; ts: number }>();
+function rateLimit(key: string, limit: number, windowMs: number) {
+  const now = Date.now();
+  const rec = rateMap.get(key);
+  if (!rec || now - rec.ts > windowMs) {
+    rateMap.set(key, { count: 1, ts: now });
+    return true;
+  }
+  if (rec.count < limit) {
+    rec.count += 1;
+    return true;
+  }
+  return false;
+}
+
 export function serverApiPlugin(): Plugin {
   return {
     name: 'server-api-plugin',
@@ -71,6 +87,8 @@ export function serverApiPlugin(): Plugin {
 
         // Basic security headers for all API responses
         const corsOrigin = req.headers.origin || '*';
+        res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
         // In dev allow http; in prod (behind proxy), require https
         if (process.env.NODE_ENV === 'production' && !isHttps(req)) {
