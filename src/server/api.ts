@@ -376,6 +376,27 @@ export function serverApiPlugin(): Plugin {
             } catch (e) { return endJson(500, { error: 'Server error' }); }
           }
 
+          if (req.url === '/api/debug-fetch' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const urlStr = String(body?.url || '').trim();
+            if (!urlStr) return endJson(400, { error: 'Missing url' });
+            try {
+              const u = new URL(urlStr);
+              if (!(u.protocol === 'http:' || u.protocol === 'https:')) return endJson(400, { error: 'Invalid protocol' });
+            } catch (e) {
+              return endJson(400, { error: 'Invalid url' });
+            }
+            try {
+              const r = await fetch(urlStr, { headers: { 'User-Agent': 'NexaBotVerifier/1.0' } });
+              if (!r || !r.ok) return endJson(400, { error: 'Fetch failed', status: r ? r.status : 0 });
+              const text = await r.text();
+              // return a snippet to avoid huge payloads
+              return endJson(200, { ok: true, url: urlStr, snippet: text.slice(0, 20000) });
+            } catch (e: any) {
+              return endJson(500, { error: 'Fetch error', message: String(e?.message || e) });
+            }
+          }
+
           if (req.url === '/api/verify-domain' && req.method === 'POST') {
             const body = await parseJson(req).catch(() => ({}));
             const domain = String(body?.domain || '').trim();
