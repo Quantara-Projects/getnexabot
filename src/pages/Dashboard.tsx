@@ -596,6 +596,20 @@ const Dashboard = () => {
                         </div>
 
                         <div>
+                          <Label>Chat UI Size (px)</Label>
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs w-12">Width</span>
+                              <Input type="number" min={260} max={640} value={state.customization.chatWidth} onChange={(e)=>setState(s=>({...s, customization:{...s.customization, chatWidth: Math.max(260, Math.min(640, Number(e.target.value)||360))}}))}/>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs w-12">Height</span>
+                              <Input type="number" min={320} max={800} value={state.customization.chatHeight} onChange={(e)=>setState(s=>({...s, customization:{...s.customization, chatHeight: Math.max(320, Math.min(800, Number(e.target.value)||420))}}))}/>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
                           <Label>Open Animation</Label>
                           <div className="grid grid-cols-5 gap-2 mt-2">
                             {(['fade','slide-up','slide-left','zoom','bounce'] as const).map((opt) => (
