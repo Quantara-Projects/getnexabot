@@ -89,12 +89,75 @@ function extractTextFromHtml(html: string) {
   }).replace(/\s+/g, ' ').trim();
 }
 
-async function tryFetchUrlText(u: string) {
+// Fetch a page and extract rich structured content (title, meta, headings, JSON-LD, visible text)
+async function fetchRichPage(u: string) {
   try {
     const res = await fetch(u, { headers: { 'User-Agent': 'NexaBotCrawler/1.0' } });
-    if (!res.ok) return '';
+    if (!res || !res.ok) return '';
     const html = await res.text();
-    return extractTextFromHtml(html);
+
+    // title
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+
+    // meta description
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*name=["']description["'][^>]*>/i);
+    const description = descMatch ? descMatch[1].trim() : '';
+
+    // open graph
+    const ogMatches = Array.from(html.matchAll(/<meta[^>]+property=["']og:([^"']+)["'][^>]*content=["']([^"']+)["'][^>]*>/ig));
+    const og = ogMatches.map(m => `${m[1]}: ${m[2]}`).join('\n');
+
+    // JSON-LD
+    const jsonLdMatches = Array.from(html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/ig));
+    const jsonLd = jsonLdMatches.map(m => m[1].trim()).join('\n');
+
+    // headings h1-h3
+    const headingMatches = Array.from(html.matchAll(/<h([1-3])[^>]*>([\s\S]*?)<\/h[1-3]>/ig));
+    const headings = headingMatches.map(m => `h${m[1]}: ${m[2].replace(/<[^>]+>/g, '').replace(/\s+/g,' ').trim()}`).join('\n');
+
+    // first meaningful paragraphs
+    const pMatches = Array.from(html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/ig));
+    const paragraphs = pMatches.slice(0, 5).map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g,' ').trim()).filter(Boolean).join('\n\n');
+
+    // visible text (fallback)
+    const visible = extractTextFromHtml(html).slice(0, 10000);
+
+    const parts = [
+      `URL: ${u}`,
+      title ? `Title: ${title}` : '',
+      description ? `Meta Description: ${description}` : '',
+      og ? `OpenGraph:\n${og}` : '',
+      jsonLd ? `JSON-LD:\n${jsonLd}` : '',
+      headings ? `Headings:\n${headings}` : '',
+      paragraphs ? `Top Paragraphs:\n${paragraphs}` : '',
+      `Visible Text:\n${visible}`,
+    ].filter(Boolean);
+
+    return parts.join('\n\n');
+  } catch (e) {
+    return '';
+  }
+}
+
+// Try common auxiliary paths on the same host (about, contact, faq, products) to gather more context
+async function tryFetchUrlText(u: string) {
+  try {
+    const urlObj = new URL(u);
+    const base = urlObj.origin;
+    const candidates = [u, `${base}/about`, `${base}/about-us`, `${base}/contact`, `${base}/contact-us`, `${base}/faq`, `${base}/products`, `${base}/pricing`];
+    const seen = new Set();
+    const collected: string[] = [];
+    for (const c of candidates) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      try {
+        const s = await fetchRichPage(c);
+        if (s) collected.push(s);
+      } catch (e) {}
+      if (collected.join('\n').length > 15000) break;
+    }
+    return collected.join('\n\n---\n\n');
   } catch (e) {
     return '';
   }
