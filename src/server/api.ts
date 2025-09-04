@@ -472,7 +472,8 @@ export function serverApiPlugin(): Plugin {
               const nowIso = new Date().toISOString();
               const secret = process.env.DOMAIN_VERIFICATION_SECRET || 'local-dom-secret';
               const tokenHash = crypto.createHash('sha256').update(token + secret).digest('base64');
-              const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(nowIso)}&used_at=is.null`;
+              // Query by specific id to avoid ambiguity
+              const q = `/rest/v1/domain_verifications?id=eq.${encodeURIComponent(tokenId)}&domain=eq.${encodeURIComponent(domain)}&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(nowIso)}&used_at=is.null`;
               const vr = await supabaseFetch(q, { method: 'GET' }, req).catch(() => null);
               if (!vr || !(vr as any).ok) return endJson(400, { error: 'Invalid or expired token' });
               const darr = await (vr as Response).json().catch(() => []);
