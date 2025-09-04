@@ -201,17 +201,12 @@ const Dashboard = () => {
     setState((s) => ({ ...s, training: { inProgress: true, progress: 0, completed: false, error: null } }));
 
     try {
-      const form = new FormData();
-      if (validUrl) form.append('url', state.websiteUrl.trim());
-      // Attach file metadata only (no raw file persisted in LS); actual upload should be handled by backend
-      // We still send file names/types so backend can correlate separate direct uploads if needed
-      // In a real app, you'd append actual File objects here
-
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
       const res = await fetch('/api/train', {
         method: 'POST',
-        body: form,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: state.uploadedFiles.map(f=>({ name:f.name, size:f.size, type:f.type })) }),
         signal: controller.signal,
       }).catch((err) => ({ ok: false, status: 0, error: err } as any));
       clearTimeout(timeout);
