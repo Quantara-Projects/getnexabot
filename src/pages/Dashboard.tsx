@@ -180,7 +180,7 @@ const Dashboard = () => {
         toast({ title: 'File too large', description: `${f.name} exceeds 10MB.`, variant: 'destructive' });
         continue;
       }
-      accepted.push({ id: `${f.name}-${f.size}-${f.lastModified}`, name: f.name, size: f.size, type: f.type });
+      accepted.push({ id: `${f.name}-${f.size}-${f.lastModified}`, name: f.name, size: f.size, type: f.type, file: f });
     }
     if (accepted.length) {
       setState((s) => ({ ...s, uploadedFiles: [...s.uploadedFiles, ...accepted] }));
