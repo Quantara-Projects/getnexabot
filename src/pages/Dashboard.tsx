@@ -261,7 +261,7 @@ const Dashboard = () => {
     }
   };
 
-  const [verification, setVerification] = useState<{ domain: string; token: string } | null>(null);
+  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
   const [debugHtml, setDebugHtml] = useState<string | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
 
