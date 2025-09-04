@@ -382,19 +382,35 @@ export function serverApiPlugin(): Plugin {
             const token = String(body?.token || '').trim();
             if (!domain || !token) return endJson(400, { error: 'Missing domain or token' });
 
-            // Try fetch homepage to find verification meta tag
-            const candidates = [`https://${domain}`, `http://${domain}`];
+            // Try multiple candidate URLs for verification (root, index.html, well-known)
+            const candidates = [
+              `https://${domain}`,
+              `http://${domain}`,
+              `https://${domain}/index.html`,
+              `http://${domain}/index.html`,
+              `https://${domain}/.well-known/nexabot-domain-verification`,
+              `http://${domain}/.well-known/nexabot-domain-verification`,
+            ];
+
+            // Build robust regex to match meta tag in any attribute order
+            const esc = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const tEsc = esc(token);
+            const metaRe = new RegExp(`<meta[^>]*(?:name\s*=\s*['\"]nexabot-domain-verification['\"][^>]*content\s*=\s*['\"]${tEsc}['\"]|content\s*=\s*['\"]${tEsc}['\"][^>]*name\s*=\s*['\"]nexabot-domain-verification['\"])`, 'i');
+            const plainRe = new RegExp(`nexabot-domain-verification[:=]\s*${tEsc}`, 'i');
+
             let found = false;
             for (const url of candidates) {
               try {
-                const r = await fetch(url, { headers: { 'User-Agent': 'NexaBotVerifier/1.0' }, timeout: 5000 } as any).catch(() => null);
+                const r = await fetch(url, { headers: { 'User-Agent': 'NexaBotVerifier/1.0' } });
                 if (!r || !r.ok) continue;
                 const text = await r.text();
-                if (text.includes(`<meta name="nexabot-domain-verification" content="${token}"`) || text.includes(`nexabot-domain-verification:${token}`)) {
+                if (metaRe.test(text) || plainRe.test(text)) {
                   found = true;
                   break;
                 }
-              } catch (e) { continue; }
+              } catch (e) {
+                // ignore and try next candidate
+              }
             }
 
             if (!found) return endJson(400, { error: 'Verification token not found on site' });
