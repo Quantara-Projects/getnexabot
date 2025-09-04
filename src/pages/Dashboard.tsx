@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,12 +23,24 @@ import {
 
 const Dashboard = () => {
   const [setupStep, setSetupStep] = useState(1);
-  const [businessName] = useState("Acme Corp"); // Would come from auth context
+  const [businessName] = useState("Acme Corp");
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('app_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.websiteUrl) setWebsiteUrl(parsed.websiteUrl);
+      }
+    } catch {}
+  }, []);
 
   const handleNextStep = () => {
-    if (setupStep < 3) {
-      setSetupStep(setupStep + 1);
-    }
+    if (setupStep === 1 && !websiteUrl.trim()) return;
+    if (setupStep === 2 && !selectedChannel) return;
+    if (setupStep < 3) setSetupStep(setupStep + 1);
   };
 
   return (
@@ -50,7 +62,7 @@ const Dashboard = () => {
               <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
                 Beta Access
               </Badge>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>
@@ -115,10 +127,12 @@ const Dashboard = () => {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="website-url">Website URL (Recommended)</Label>
-                        <Input 
+                        <Input
                           id="website-url"
-                          placeholder="https://your-website.com" 
+                          placeholder="https://your-website.com"
                           className="mt-2"
+                          value={websiteUrl}
+                          onChange={(e) => setWebsiteUrl(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground mt-1">We'll automatically extract relevant information</p>
                       </div>
@@ -137,9 +151,10 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    <Button 
-                      onClick={handleNextStep} 
+                    <Button
+                      onClick={handleNextStep}
                       className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
+                      disabled={!websiteUrl.trim()}
                     >
                       Continue to Integrations
                     </Button>
@@ -152,21 +167,21 @@ const Dashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="p-4 text-center border-2 hover:border-primary cursor-pointer transition-smooth">
+                      <Card onClick={() => setSelectedChannel('website')} className={`p-4 text-center border-2 cursor-pointer transition-smooth ${selectedChannel==='website' ? 'border-primary' : 'hover:border-primary'}`}>
                         <Globe className="w-8 h-8 text-primary mx-auto mb-2" />
                         <h4 className="font-semibold">Website Chat</h4>
                         <p className="text-xs text-muted-foreground">Embed on your site</p>
                         <Badge variant="secondary" className="mt-2">Recommended</Badge>
                       </Card>
 
-                      <Card className="p-4 text-center border-2 hover:border-primary cursor-pointer transition-smooth">
+                      <Card onClick={() => setSelectedChannel('whatsapp')} className={`p-4 text-center border-2 cursor-pointer transition-smooth ${selectedChannel==='whatsapp' ? 'border-primary' : 'hover:border-primary'}`}>
                         <MessageSquare className="w-8 h-8 text-green-600 mx-auto mb-2" />
                         <h4 className="font-semibold">WhatsApp</h4>
                         <p className="text-xs text-muted-foreground">Business API</p>
                         <Badge variant="outline" className="mt-2">Coming Soon</Badge>
                       </Card>
 
-                      <Card className="p-4 text-center border-2 hover:border-primary cursor-pointer transition-smooth">
+                      <Card onClick={() => setSelectedChannel('messenger')} className={`p-4 text-center border-2 cursor-pointer transition-smooth ${selectedChannel==='messenger' ? 'border-primary' : 'hover:border-primary'}`}>
                         <Smartphone className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                         <h4 className="font-semibold">Messenger</h4>
                         <p className="text-xs text-muted-foreground">Facebook Pages</p>
@@ -174,9 +189,10 @@ const Dashboard = () => {
                       </Card>
                     </div>
 
-                    <Button 
-                      onClick={handleNextStep} 
+                    <Button
+                      onClick={handleNextStep}
                       className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
+                      disabled={!selectedChannel}
                     >
                       Configure Settings
                     </Button>
