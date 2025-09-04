@@ -133,13 +133,13 @@ const Footer = () => {
                   <span>hello@nexabot.ai</span>
                 </a>
                 
-                <a 
-                  href="#"
+                <Link
+                  to="/help"
                   className="flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-smooth"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>Live Chat</span>
-                </a>
+                </Link>
               </div>
             </div>
           </div>
