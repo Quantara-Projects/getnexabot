@@ -160,10 +160,10 @@ export function serverApiPlugin(): Plugin {
             if (!botId) return endJson(400, { error: 'Missing botId' });
             const customization = body?.customization || {};
 
-            await supabaseFetch('/rest/v1/chatbot_configs', {
+            await supabaseFetch('/rest/v1/chatbot_configs?bot_id=eq.' + encodeURIComponent(botId), {
               method: 'PATCH',
               body: JSON.stringify({ settings: customization }),
-              headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+              headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
             }, req).catch(() => null);
 
             return endJson(200, { botId });
