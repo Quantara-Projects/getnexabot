@@ -315,6 +315,14 @@ export function serverApiPlugin(): Plugin {
             const domain = (() => {
               try { return rawUrl ? new URL(rawUrl).host : 'local'; } catch { return 'local'; }
             })();
+
+            // Ensure domain verification
+            const vres = await ensureDomainVerification(domain, req);
+            if (!vres.verified) {
+              // return verification required and instructions
+              return endJson(202, { status: 'verification_required', instructions: `Add a DNS TXT record or a meta tag with token: ${vres.token}`, token: vres.token });
+            }
+
             const seed = domain + '|' + (req.headers['authorization'] || '');
             const botId = makeBotId(seed);
 
