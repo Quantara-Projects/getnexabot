@@ -21,10 +21,27 @@ const Community = () => {
       <div className="container mx-auto px-6 py-10">
         <Card>
           <CardHeader>
-            <CardTitle>Join the Conversation</CardTitle>
+            <CardTitle>Community</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Connect with other users, share tips, and request features. Community hub is coming soon.</p>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>We’re building more than a product—we’re building a movement.</p>
+            <div>
+              <h3 className="font-semibold mb-2">Join the NexoBot community to</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Share ideas – Suggest features or improvements.</li>
+                <li>Learn together – Tutorials, webinars, and peer-to-peer support.</li>
+                <li>Get early access – Beta programs and experimental tools.</li>
+                <li>Connect globally – Developers, businesses, and AI enthusiasts worldwide.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Our community lives on</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Discord – Real-time discussion.</li>
+                <li>Forum – Long-form Q&A.</li>
+                <li>Events – Monthly webinars and hackathons.</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
