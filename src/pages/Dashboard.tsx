@@ -261,6 +261,29 @@ const Dashboard = () => {
     }
   };
 
+  const [verification, setVerification] = useState<{ domain: string; token: string } | null>(null);
+
+  const verifyDomain = async (domain: string, token: string) => {
+    try {
+      const res = await fetch('/api/verify-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, token }),
+      });
+      if (res.ok) {
+        toast({ title: 'Domain verified', description: 'Your domain is now verified.' });
+        setVerification(null);
+        // Retry connect automatically
+        await onConnect('website');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: 'Verification failed', description: data.error || 'Token not found. Ensure meta tag or DNS TXT present.', variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: 'Verification error', description: 'Unable to verify domain. Try again later.', variant: 'destructive' });
+    }
+  };
+
   const onConnect = async (channel: 'website' | 'whatsapp' | 'messenger') => {
     if (channel !== 'website') return;
     setState((s) => ({ ...s, selectedChannel: 'website' }));
@@ -277,7 +300,9 @@ const Dashboard = () => {
       if (res && (res as any).ok) {
         const data = await (res as Response).json().catch(() => ({}));
         if (data?.status === 'verification_required') {
-          toast({ title: 'Domain verification required', description: data.instructions || 'Add verification token to your domain.', variant: 'destructive' });
+          // show verification instructions with token
+          setVerification({ domain: new URL(state.websiteUrl).host, token: data.token });
+          toast({ title: 'Domain verification required', description: 'Add the meta tag or DNS TXT record, then click Verify.' });
           setState((s) => ({ ...s, selectedChannel: null }));
           return;
         }
