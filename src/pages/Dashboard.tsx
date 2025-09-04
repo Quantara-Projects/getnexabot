@@ -304,8 +304,8 @@ const Dashboard = () => {
       if (res && (res as any).ok) {
         const data = await (res as Response).json().catch(() => ({}));
         if (data?.status === 'verification_required') {
-          // show verification instructions with token
-          setVerification({ domain: new URL(state.websiteUrl).host, token: data.token });
+          // show verification instructions with token and tokenId
+          setVerification({ domain: new URL(state.websiteUrl).host, token: data.token, tokenId: data.tokenId });
           toast({ title: 'Domain verification required', description: 'Add the meta tag or DNS TXT record, then click Verify.' });
           setState((s) => ({ ...s, selectedChannel: null }));
           return;
