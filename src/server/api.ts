@@ -431,7 +431,8 @@ export function serverApiPlugin(): Plugin {
             const body = await parseJson(req).catch(() => ({}));
             const domain = String(body?.domain || '').trim();
             const token = String(body?.token || '').trim();
-            if (!domain || !token) return endJson(400, { error: 'Missing domain or token' });
+            const tokenId = String(body?.tokenId || '').trim();
+            if (!domain || !token || !tokenId) return endJson(400, { error: 'Missing domain, token or tokenId' });
 
             // Try multiple candidate URLs for verification (root, index.html, well-known)
             const candidates = [
