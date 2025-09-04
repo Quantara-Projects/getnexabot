@@ -662,13 +662,14 @@ const Dashboard = () => {
                                     ) : (
                                       <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-4 h-4 text-white" /></div>
                                     )}
-                                    <span className="text-sm font-medium">{state.customization.botName}</span>
+                                    <span className="text-sm font-medium">{state.customization.headerTitle}</span>
                                   </div>
                                 </div>
                                 <div className="flex-1 p-3 space-y-2 bg-secondary/30">
                                   <div className={`max-w-[80%] px-3 py-2 text-sm text-white ${previewBubbleClass} ml-auto`} style={{ backgroundColor: state.customization.buttonColor }}>
                                     Hi, do you offer 24/7 support?
                                   </div>
+                                  <div className="text-[11px] text-muted-foreground">{state.customization.botName}</div>
                                   <div className={`max-w-[80%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor: '#F1F5F9' }}>
                                     {state.customization.greeting}
                                   </div>
@@ -685,13 +686,14 @@ const Dashboard = () => {
                                           ) : (
                                             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-3 h-3 text-white" /></div>
                                           )}
-                                          <span className="text-xs font-medium">{state.customization.botName}</span>
+                                          <span className="text-xs font-medium">{state.customization.headerTitle}</span>
                                         </div>
                                         <button className="text-white/90 text-xs" onClick={(e)=>{e.stopPropagation(); setPreviewOpen(false);}}>✕</button>
                                       </div>
                                     </div>
                                     <div className="p-3 space-y-2 bg-secondary/30">
-                                      <div className={`max-w-[85%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor:'#F1F5F9' }}>{state.customization.greeting}</div>
+                                      <div className="text-[11px] text-muted-foreground">{state.customization.botName}</div>
+                                      <div className={`max-w:[85%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor:'#F1F5F9' }}>{state.customization.greeting}</div>
                                       <div className={`max-w-[65%] px-3 py-2 text-sm text-white ${previewBubbleClass}`} style={{ backgroundColor: state.customization.buttonColor }}>How can I help?</div>
                                     </div>
                                   </div>
