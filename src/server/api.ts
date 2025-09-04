@@ -46,9 +46,15 @@ const isHttps = (req: any) => {
   return proto === 'https' || (req.socket && (req.socket as any).encrypted);
 };
 
+function requireEnv(name: string) {
+  const v = process.env[name];
+  if (!v) throw new Error(`${name} not set`);
+  return v;
+}
+
 async function supabaseFetch(path: string, options: any, req: any) {
-  const base = process.env.SUPABASE_URL || 'https://fzygxynereijjfbcvwoh.supabase.co';
-  const anon = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6eWd4eW5lcmVpampmYmN2d29oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NTYxMzMsImV4cCI6MjA3MjUzMjEzM30.-JnUwaXflcWmvL8_fu08uEzeBnIhxvAkd6_hqVeSYlI';
+  const base = requireEnv('SUPABASE_URL');
+  const anon = requireEnv('SUPABASE_ANON_KEY');
   const token = (req.headers['authorization'] as string) || '';
   const headers: Record<string, string> = {
     apikey: anon,
