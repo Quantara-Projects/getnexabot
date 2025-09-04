@@ -108,6 +108,8 @@ export function serverApiPlugin(): Plugin {
 
         try {
           if (req.url === '/api/train' && req.method === 'POST') {
+            const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
+            if (!rateLimit('train:' + ip, 20, 60_000)) return endJson(429, { error: 'Too Many Requests' });
             const body = await parseJson(req).catch(() => ({}));
             const url = typeof body?.url === 'string' ? body.url.trim() : '';
             if (!url && !Array.isArray(body?.files)) {
