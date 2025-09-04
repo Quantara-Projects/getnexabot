@@ -21,10 +21,19 @@ const Status = () => {
       <div className="container mx-auto px-6 py-10">
         <Card>
           <CardHeader>
-            <CardTitle>Operational</CardTitle>
+            <CardTitle>Status</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">All systems are operational. Check back here for real-time incident updates.</p>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>Transparency is key. Our Status Page shows real-time uptime and past incidents.</p>
+            <div>
+              <h3 className="font-semibold mb-2">We monitor</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>API availability</li>
+                <li>Dashboard performance</li>
+                <li>Integration health (Slack, Discord, Website widget, etc.)</li>
+              </ul>
+            </div>
+            <p>If there’s an issue, we publish incident reports with root cause analysis and resolution updates.</p>
           </CardContent>
         </Card>
       </div>
