@@ -682,16 +682,6 @@ const Dashboard = () => {
                             <pre className="whitespace-pre-wrap">{debugHtml}</pre>
                           </div>
                         )}
-                        {storedTokens.length > 0 && (
-                          <div className="mt-3 bg-background border rounded p-3 text-xs">
-                            <h5 className="font-semibold mb-2">Stored verification tokens</h5>
-                            <ul className="space-y-2">
-                              {storedTokens.map((t:any) => (
-                                <li key={t.id} className="flex items-center justify-between"><code className="font-mono">{t.token}</code><span className="text-xs text-muted-foreground">expires: {t.expires_at || 'n/a'}</span></li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
                       </div>
                     )}
 
