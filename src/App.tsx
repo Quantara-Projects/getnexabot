@@ -20,6 +20,7 @@ import HelpCenter from "./pages/HelpCenter";
 import ApiDocs from "./pages/ApiDocs";
 import Status from "./pages/Status";
 import Community from "./pages/Community";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/verify" element={<VerifyEmail />} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/gdpr" element={<GDPR />} />
         <Route path="/help" element={<HelpCenter />} />
