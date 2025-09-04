@@ -264,7 +264,6 @@ const Dashboard = () => {
   const [verification, setVerification] = useState<{ domain: string; token: string } | null>(null);
   const [debugHtml, setDebugHtml] = useState<string | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
-  const [storedTokens, setStoredTokens] = useState<any[]>([]);
 
   const verifyDomain = async (domain: string, token: string) => {
     try {
