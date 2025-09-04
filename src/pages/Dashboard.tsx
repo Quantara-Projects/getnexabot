@@ -111,13 +111,14 @@ const Dashboard = () => {
 
   const businessName = 'Acme Corp';
 
-  // Load from localStorage
+  // Load from localStorage (do not restore setupStep — default to Train Bot)
   useEffect(() => {
     try {
       const saved = localStorage.getItem('wizard_state');
       if (saved) {
         const parsed = JSON.parse(saved) as WizardState;
-        setState((prev) => ({ ...prev, ...parsed }));
+        const { setupStep, ...rest } = parsed || {};
+        setState((prev) => ({ ...prev, ...rest }));
       }
     } catch {}
   }, []);
