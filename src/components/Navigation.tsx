@@ -44,7 +44,7 @@ const Navigation = () => {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="font-medium">
+            <Button variant="ghost" className="font-medium" onClick={() => navigate('/login')}>
               Sign In
             </Button>
             <Button 
@@ -79,7 +79,7 @@ const Navigation = () => {
                 </a>
               ))}
               <div className="flex flex-col space-y-2 pt-4">
-                <Button variant="ghost" className="font-medium justify-start">
+                <Button variant="ghost" className="font-medium justify-start" onClick={() => { navigate('/login'); setIsMenuOpen(false); }}>
                   Sign In
                 </Button>
                 <Button 
