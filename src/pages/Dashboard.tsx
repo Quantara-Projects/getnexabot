@@ -739,9 +739,12 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
-                      <Button variant="outline" onClick={handlePrev} className="w-1/3">Back</Button>
-                      <Button onClick={onLaunch} className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white">Launch NexaBot 🚀</Button>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={handlePrev} className="w-1/3">Back</Button>
+                        <Button onClick={saveCustomization} className="flex-1" disabled={saving}>{saving? 'Processing…' : 'Save Changes'}</Button>
+                      </div>
+                      <Button onClick={onLaunch} className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white">Launch NexaBot 🚀</Button>
                     </div>
 
                     {state.embedCode && (
