@@ -21,10 +21,20 @@ const CookiePolicy = () => {
       <div className="container mx-auto px-6 py-10">
         <Card>
           <CardHeader>
-            <CardTitle>Use of Cookies</CardTitle>
+            <CardTitle>Cookie Policy</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">We use cookies to improve your experience, analyze usage, and personalize content. You can control cookies through your browser settings.</p>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>We use cookies to enhance your browsing experience and provide personalized services.</p>
+            <div>
+              <h3 className="font-semibold mb-2">Types of Cookies</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Essential Cookies – Required for login and core functionality.</li>
+                <li>Performance Cookies – Help us understand usage patterns and improve the platform.</li>
+                <li>Functional Cookies – Remember preferences like language and theme.</li>
+                <li>Analytics Cookies – Collect anonymized statistics to optimize our services.</li>
+              </ul>
+            </div>
+            <p>You can adjust or revoke cookie permissions anytime in Settings. We do not sell your personal data.</p>
           </CardContent>
         </Card>
       </div>
