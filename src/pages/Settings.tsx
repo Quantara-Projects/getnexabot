@@ -484,9 +484,9 @@ const Settings = () => {
                     ))}
 
                     {settings.uploadedFiles.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
+                      <div className="text-center py-8 text-red-700 bg-red-50 border border-red-200 rounded">
                         <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                        <p>No training data uploaded yet</p>
+                        <p>Bot training data missing. Your bot will not work until you upload files or provide a website URL.</p>
                       </div>
                     )}
                   </div>
