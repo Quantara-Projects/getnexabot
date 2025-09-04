@@ -59,6 +59,8 @@ type Customization = {
   buttonSize: 'sm' | 'md' | 'lg';
   headerTitle: string;
   avatarDataUrl: string | null;
+  buttonIconUrl: string | null;
+  openAnimation: 'fade' | 'slide-up' | 'slide-left' | 'zoom' | 'bounce';
 };
 
 type WizardState = {
@@ -86,6 +88,8 @@ const DEFAULT_CUSTOMIZATION: Customization = {
   buttonSize: 'md',
   headerTitle: 'Ask NexaBot',
   avatarDataUrl: null,
+  buttonIconUrl: null,
+  openAnimation: 'fade',
 };
 
 const Dashboard = () => {
@@ -308,6 +312,7 @@ const Dashboard = () => {
     } catch {}
   };
 
+  const [previewOpen, setPreviewOpen] = useState(false);
   const buttonSizePx = state.customization.buttonSize === 'sm' ? 44 : state.customization.buttonSize === 'lg' ? 64 : 52;
   const previewBubbleClass =
     state.customization.bubbleShape === 'rounded'
@@ -591,6 +596,34 @@ const Dashboard = () => {
                         </div>
 
                         <div>
+                          <Label>Open Animation</Label>
+                          <div className="grid grid-cols-5 gap-2 mt-2">
+                            {(['fade','slide-up','slide-left','zoom','bounce'] as const).map((opt) => (
+                              <Button key={opt} variant={state.customization.openAnimation===opt?'default':'outline'} onClick={()=>setState(s=>({...s, customization:{...s.customization, openAnimation: opt}}))} className="capitalize text-xs">{opt.replace('-',' ')}</Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Button Icon</Label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <Button variant="outline" onClick={() => document.getElementById('button-icon-input')?.click()}>
+                              <ImageIcon className="w-4 h-4 mr-2" /> Upload Icon
+                            </Button>
+                            <input id="button-icon-input" type="file" accept="image/*" className="hidden" onChange={(e)=>{
+                              const file=e.target.files?.[0]; if(!file) return; if(file.size>1024*1024){ toast({title:'Icon too large', description:'Max 1MB.', variant:'destructive'}); return; }
+                              const reader=new FileReader(); reader.onload=()=>setState(s=>({...s, customization:{...s.customization, buttonIconUrl: reader.result as string}})); reader.readAsDataURL(file);
+                            }} />
+                            {state.customization.buttonIconUrl && (
+                              <img src={state.customization.buttonIconUrl} alt="icon" className="w-8 h-8 rounded border" />
+                            )}
+                            {!state.customization.buttonIconUrl && (
+                              <span className="text-xs text-muted-foreground">Default icon will be used</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
                           <Label>Bot Avatar</Label>
                           <div className="flex items-center gap-3 mt-2">
                             <Button variant="outline" onClick={() => document.getElementById('avatar-input')?.click()}>
@@ -641,6 +674,30 @@ const Dashboard = () => {
                                   </div>
                                 </div>
                               </div>
+                              <div className="absolute inset-0 pointer-events-none flex items-end justify-end p-4">
+                                {previewOpen && (
+                                  <div className={`pointer-events-auto w-full max-w-sm bg-white rounded-xl shadow-xl border overflow-hidden preview-anim ${state.customization.openAnimation === 'fade' ? 'preview-anim-fade' : state.customization.openAnimation === 'slide-up' ? 'preview-anim-slide-up' : state.customization.openAnimation === 'slide-left' ? 'preview-anim-slide-left' : state.customization.openAnimation === 'zoom' ? 'preview-anim-zoom' : 'preview-anim-bounce'}`}>
+                                    <div className="p-3 text-white" style={{ backgroundColor: state.customization.chatHeaderColor }}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          {state.customization.avatarDataUrl ? (
+                                            <img src={state.customization.avatarDataUrl} alt="avatar" className="w-5 h-5 rounded-full border border-white/30" />
+                                          ) : (
+                                            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-3 h-3 text-white" /></div>
+                                          )}
+                                          <span className="text-xs font-medium">{state.customization.botName}</span>
+                                        </div>
+                                        <button className="text-white/90 text-xs" onClick={(e)=>{e.stopPropagation(); setPreviewOpen(false);}}>✕</button>
+                                      </div>
+                                    </div>
+                                    <div className="p-3 space-y-2 bg-secondary/30">
+                                      <div className={`max-w-[85%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor:'#F1F5F9' }}>{state.customization.greeting}</div>
+                                      <div className={`max-w-[65%] px-3 py-2 text-sm text-white ${previewBubbleClass}`} style={{ backgroundColor: state.customization.buttonColor }}>How can I help?</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
                               <button
                                 aria-label="chat-button"
                                 className="absolute rounded-full shadow-lg border"
@@ -651,9 +708,15 @@ const Dashboard = () => {
                                   bottom: 16,
                                   backgroundColor: state.customization.buttonColor,
                                 }}
+                                onClick={()=>setPreviewOpen((v)=>!v)}
                               >
-                                <MessageSquare className="w-5 h-5 text-white mx-auto" />
+                                {state.customization.buttonIconUrl ? (
+                                  <img src={state.customization.buttonIconUrl} alt="icon" className="w-5 h-5 mx-auto" />
+                                ) : (
+                                  <MessageSquare className="w-5 h-5 text-white mx-auto" />
+                                )}
                               </button>
+                              <p className="absolute left-3 bottom-3 text-[11px] text-muted-foreground">Click the button to preview chat UI</p>
                             </div>
                           </CardContent>
                         </Card>
