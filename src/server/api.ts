@@ -451,7 +451,23 @@ export function serverApiPlugin(): Plugin {
 
             if (!found) return endJson(400, { error: 'Verification token not found on site' });
 
+            // Ensure token matches a stored unexpired verification entry
             try {
+              const nowIso = new Date().toISOString();
+              const q = `/rest/v1/domain_verifications?domain=eq.${encodeURIComponent(domain)}&token=eq.${encodeURIComponent(token)}&expires_at=gt.${encodeURIComponent(nowIso)}&used_at=is.null`;
+              const vr = await supabaseFetch(q, { method: 'GET' }, req).catch(() => null);
+              if (!vr || !(vr as any).ok) return endJson(400, { error: 'Invalid or expired token' });
+              const darr = await (vr as Response).json().catch(() => []);
+              if (!Array.isArray(darr) || darr.length === 0) return endJson(400, { error: 'Invalid or expired token' });
+
+              // mark verification used
+              const id = darr[0].id;
+              await supabaseFetch('/rest/v1/domain_verifications?id=eq.' + encodeURIComponent(id), {
+                method: 'PATCH',
+                body: JSON.stringify({ used_at: new Date().toISOString() }),
+                headers: { 'Content-Type': 'application/json' },
+              }, req).catch(() => null);
+
               await supabaseFetch('/rest/v1/domains', {
                 method: 'POST',
                 body: JSON.stringify({ domain, verified: true, verified_at: new Date().toISOString() }),
