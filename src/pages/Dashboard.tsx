@@ -265,12 +265,14 @@ const Dashboard = () => {
   const [debugHtml, setDebugHtml] = useState<string | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
 
-  const verifyDomain = async (domain: string, token: string) => {
+  const verifyDomain = async (domain: string, token: string, tokenId?: string) => {
     try {
+      const payload: any = { domain, token };
+      if (tokenId) payload.tokenId = tokenId;
       const res = await fetch('/api/verify-domain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain, token }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         toast({ title: 'Domain verified', description: 'Your domain is now verified.' });
