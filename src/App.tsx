@@ -21,12 +21,14 @@ import ApiDocs from "./pages/ApiDocs";
 import Status from "./pages/Status";
 import Community from "./pages/Community";
 import VerifyEmail from "./pages/VerifyEmail";
+import ErrorOverlay from "./components/ErrorOverlay";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <ErrorOverlay />
       <Toaster />
       <Sonner />
       <Routes>
