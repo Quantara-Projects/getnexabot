@@ -5,9 +5,11 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
+let _supabase: any;
+
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   // Avoid throwing at module initialization when env vars are missing (e.g. local dev without supabase configured).
-  // Export a lightweight stub that surfaces a helpful error when used.
+  // Provide a lightweight stub that surfaces a helpful error when used.
   console.warn('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Supabase client is disabled.');
 
   const error = () => {
@@ -41,9 +43,9 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     },
   };
 
-  export const supabase = supabaseStub as unknown as ReturnType<typeof createClient<Database>>;
+  _supabase = supabaseStub;
 } else {
-  export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  _supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: localStorage,
       persistSession: true,
@@ -51,3 +53,5 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     }
   });
 }
+
+export const supabase = _supabase as unknown as ReturnType<typeof createClient<Database>>;
