@@ -85,10 +85,26 @@ const Settings = () => {
     root.style.setProperty('--secondary', hexToHsl(secondaryHex));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
       localStorage.setItem('app_settings', JSON.stringify(settings));
       applyTheme(settings.primaryColor, settings.secondaryColor);
+      const { data: userRes } = await supabase.auth.getUser();
+      const user = userRes?.user;
+      if (user) {
+        await supabase.from('user_settings').upsert({
+          user_id: user.id,
+          theme_primary_color: settings.primaryColor,
+          theme_secondary_color: settings.secondaryColor,
+          website_url: settings.websiteUrl,
+        }, { onConflict: 'user_id' } as any);
+        await supabase.from('profiles').upsert({
+          user_id: user.id,
+          full_name: settings.name,
+          business_name: settings.businessName,
+          website_url: settings.websiteUrl,
+        }, { onConflict: 'user_id' } as any);
+      }
     } catch {}
   };
 
