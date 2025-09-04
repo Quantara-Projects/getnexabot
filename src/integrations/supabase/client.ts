@@ -2,13 +2,52 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  // Avoid throwing at module initialization when env vars are missing (e.g. local dev without supabase configured).
+  // Export a lightweight stub that surfaces a helpful error when used.
+  console.warn('[supabase] VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Supabase client is disabled.');
+
+  const error = () => {
+    throw new Error('Supabase client not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+  };
+
+  // Minimal stub covering common usage patterns (from(), auth)
+  const supabaseStub: any = {
+    from: () => ({
+      select: async () => { error(); },
+      insert: async () => { error(); },
+      update: async () => { error(); },
+      delete: async () => { error(); },
+      upsert: async () => { error(); },
+      eq: () => ({ select: async () => { error(); } }),
+    }),
+    rpc: async () => { error(); },
+    auth: {
+      signIn: async () => { error(); },
+      signUp: async () => { error(); },
+      signOut: async () => { error(); },
+      getUser: async () => ({ data: null, error: new Error('Supabase client not configured') }),
+      onAuthStateChange: () => ({ data: null, subscription: { unsubscribe: () => {} } }),
+    },
+    storage: {
+      from: () => ({
+        upload: async () => { error(); },
+        download: async () => { error(); },
+        remove: async () => { error(); },
+      }),
+    },
+  };
+
+  export const supabase = supabaseStub as unknown as ReturnType<typeof createClient<Database>>;
+} else {
+  export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    }
+  });
+}
