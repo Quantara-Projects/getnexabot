@@ -21,10 +21,21 @@ const GDPR = () => {
       <div className="container mx-auto px-6 py-10">
         <Card>
           <CardHeader>
-            <CardTitle>Data Protection</CardTitle>
+            <CardTitle>GDPR Compliance</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">We follow GDPR principles: data minimization, purpose limitation, and user rights to access, rectify, and erase their data. Contact support to exercise your rights.</p>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>We comply fully with the General Data Protection Regulation (GDPR).</p>
+            <div>
+              <h3 className="font-semibold mb-2">Your Rights</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Right to Access – Request a copy of your data.</li>
+                <li>Right to Rectification – Correct inaccurate or incomplete data.</li>
+                <li>Right to Erasure – Delete your data permanently.</li>
+                <li>Right to Data Portability – Export your data in a usable format.</li>
+                <li>Right to Object/Restrict – Limit how your data is processed.</li>
+              </ul>
+            </div>
+            <p>To make a request, email privacy@nexobot.ai. All GDPR inquiries are handled within 30 days.</p>
           </CardContent>
         </Card>
       </div>
