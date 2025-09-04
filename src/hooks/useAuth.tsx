@@ -18,16 +18,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const ensureProfileAndSettings = async (u: User) => {
+    try {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', u.id)
+        .limit(1);
+      if (!profs || profs.length === 0) {
+        await supabase.from('profiles').insert({
+          user_id: u.id,
+          full_name: u.user_metadata?.full_name || null,
+          business_name: null,
+          website_url: null,
+        });
+      }
+      const { data: settings } = await supabase
+        .from('user_settings')
+        .select('id')
+        .eq('user_id', u.id)
+        .limit(1);
+      if (!settings || settings.length === 0) {
+        await supabase.from('user_settings').insert({ user_id: u.id });
+      }
+    } catch {}
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
-        // Log security events
+
         if (event === 'SIGNED_IN' && session?.user) {
+          ensureProfileAndSettings(session.user);
           setTimeout(() => {
             supabase.rpc('log_security_event', {
               p_user_id: session.user.id,
@@ -41,11 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) await ensureProfileAndSettings(session.user);
     });
 
     return () => subscription.unsubscribe();
@@ -53,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, metadata?: any) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -63,7 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Log signup attempt
     supabase.rpc('log_security_event', {
       p_user_id: null,
       p_action: 'SIGNUP_ATTEMPT',
@@ -77,12 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    // Pre-check: signal to user if this email likely exists by attempting a login
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    // Log login attempt
     supabase.rpc('log_security_event', {
       p_user_id: null,
       p_action: 'LOGIN_ATTEMPT',
@@ -92,6 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       p_details: error ? { error: error.message } : null
     });
 
+    // On successful login, profile/settings will be ensured by auth state effect
     return { error };
   };
 
