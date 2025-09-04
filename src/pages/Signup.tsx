@@ -116,11 +116,20 @@ const Signup = () => {
           setCaptchaReset(prev => prev + 1);
           setCaptchaVerified(false);
         } else {
-          toast({
-            title: "Account Created!",
-            description: "Please check your email to verify your account"
-          });
-          navigate('/dashboard');
+          try {
+            const { supabase } = await import('@/integrations/supabase/client');
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (token) {
+              await fetch('/api/send-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ email: formData.email }),
+              });
+            }
+          } catch {}
+          toast({ title: 'Account Created!', description: 'Verification email sent.' });
+          navigate(`/verify?email=${encodeURIComponent(formData.email)}`);
         }
       }
     } catch (error) {
