@@ -273,19 +273,27 @@ const Dashboard = () => {
       }).catch((err) => ({ ok: false, status: 0, error: err } as any));
 
       let botId = state.botId;
+      let widgetToken: string | null = null;
       if (res && (res as any).ok) {
         const data = await (res as Response).json().catch(() => ({}));
+        if (data?.status === 'verification_required') {
+          toast({ title: 'Domain verification required', description: data.instructions || 'Add verification token to your domain.', variant: 'destructive' });
+          setState((s) => ({ ...s, selectedChannel: null }));
+          return;
+        }
         botId = data.botId || botId;
+        widgetToken = data.widgetToken || null;
       }
+
       if (!botId) {
-        // Generate deterministic bot id for demo if backend not ready
         const host = (() => {
           try { return new URL(state.websiteUrl).host; } catch { return 'local'; }
         })();
         botId = `bot_${btoa(host).replace(/=+$/,'')}`;
       }
 
-      const embed = `<!-- NexoBot Widget -->\n<script src="https://cdn.nexobot.ai/install.js?id=${botId}"></script>`;
+      const origin = window.location.origin.replace(/:\d+$/, '') || window.location.origin;
+      const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
       setState((s) => ({ ...s, botId, embedCode: embed }));
       toast({ title: 'Website chat connected', description: 'Embed code generated.' });
     } catch {
