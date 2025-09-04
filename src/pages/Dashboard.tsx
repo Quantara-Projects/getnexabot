@@ -677,7 +677,7 @@ const Dashboard = () => {
                               </div>
                               <div className="absolute inset-0 pointer-events-none flex items-end justify-end p-4">
                                 {previewOpen && (
-                                  <div className={`pointer-events-auto w-full max-w-sm bg-white rounded-xl shadow-xl border overflow-hidden preview-anim ${state.customization.openAnimation === 'fade' ? 'preview-anim-fade' : state.customization.openAnimation === 'slide-up' ? 'preview-anim-slide-up' : state.customization.openAnimation === 'slide-left' ? 'preview-anim-slide-left' : state.customization.openAnimation === 'zoom' ? 'preview-anim-zoom' : 'preview-anim-bounce'}`}>
+                                  <div className={`pointer-events-auto bg-white rounded-xl shadow-xl border overflow-hidden preview-anim ${state.customization.openAnimation === 'fade' ? 'preview-anim-fade' : state.customization.openAnimation === 'slide-up' ? 'preview-anim-slide-up' : state.customization.openAnimation === 'slide-left' ? 'preview-anim-slide-left' : state.customization.openAnimation === 'zoom' ? 'preview-anim-zoom' : 'preview-anim-bounce'}`} style={{ width: state.customization.chatWidth, height: state.customization.chatHeight }}>
                                     <div className="p-3 text-white" style={{ backgroundColor: state.customization.chatHeaderColor }}>
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
