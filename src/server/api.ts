@@ -254,7 +254,9 @@ export function serverApiPlugin(): Plugin {
                 </table>`;
               await transporter.sendMail({ to: email, from, subject: 'Verify your email for NexaBot', html });
             } else {
-              console.warn('[email] SMTP not configured; verification URL:', verifyUrl);
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn('[email] SMTP not configured; verification URL:', verifyUrl);
+              }
             }
 
             return endJson(200, { ok: true });
