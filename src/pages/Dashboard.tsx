@@ -318,7 +318,8 @@ const Dashboard = () => {
       if (res && (res as any).ok) {
         const data = await (res as Response).json().catch(() => ({}));
         const botId = data.botId || state.botId;
-        const embed = `<!-- NexoBot Widget -->\n<script src="https://cdn.nexobot.ai/install.js?id=${botId}"></script>`;
+        const widgetToken = data.widgetToken || null;
+        const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
         setState((s) => ({ ...s, botId, embedCode: embed }));
         toast({ title: 'Launched', description: 'Your bot is live. Copy the embed code.' });
       } else {
