@@ -7,16 +7,16 @@ const Footer = () => {
 
   const footerLinks = {
     Product: [
-      { name: 'Features', to: '/features' },
-      { name: 'Pricing', to: '/pricing' },
-      { name: 'Demo', to: '/demo' },
-      { name: 'Integrations', to: '/integrations' }
+      { name: 'Features', href: '#features' },
+      { name: 'Pricing', href: '#pricing' },
+      { name: 'Demo', href: '#demo' },
+      { name: 'Integrations', href: '#integrations' }
     ],
     Company: [
-      { name: 'About', to: '/about' },
-      { name: 'Blog', to: '/blog' },
-      { name: 'Careers', to: '/careers' },
-      { name: 'Contact', to: '/contact' }
+      { name: 'About', href: '#about' },
+      { name: 'Blog', href: '#blog' },
+      { name: 'Careers', href: '#careers' },
+      { name: 'Contact', href: '#contact' }
     ],
     Legal: [
       { name: 'Privacy Policy', to: '/privacy' },
