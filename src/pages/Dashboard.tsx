@@ -405,13 +405,40 @@ const Dashboard = () => {
     }
   };
 
+  async function copyToClipboard(text: string) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      // fallthrough to fallback
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
   const copyEmbed = async () => {
     if (!state.embedCode) return;
-    try {
-      await navigator.clipboard.writeText(state.embedCode);
+    const ok = await copyToClipboard(state.embedCode);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch {}
+      toast({ title: 'Copied', description: 'Embed code copied to clipboard.' });
+    } else {
+      toast({ title: 'Copy failed', description: 'Unable to copy. Please copy manually.', variant: 'destructive' });
+    }
   };
 
   const [previewOpen, setPreviewOpen] = useState(false);
