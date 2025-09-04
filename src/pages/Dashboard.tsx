@@ -629,7 +629,7 @@ const Dashboard = () => {
                                     ) : (
                                       <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-4 h-4 text-white" /></div>
                                     )}
-                                    <span className="text-sm font-medium">{state.customization.headerTitle}</span>
+                                    <span className="text-sm font-medium">{state.customization.botName}</span>
                                   </div>
                                 </div>
                                 <div className="flex-1 p-3 space-y-2 bg-secondary/30">
