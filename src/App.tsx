@@ -14,6 +14,17 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import Demo from "./pages/Demo";
+import Integrations from "./pages/Integrations";
+import Careers from "./pages/Careers";
+import CookiePolicy from "./pages/CookiePolicy";
+import GDPR from "./pages/GDPR";
+import HelpCenter from "./pages/HelpCenter";
+import ApiDocs from "./pages/ApiDocs";
+import Status from "./pages/Status";
+import Community from "./pages/Community";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +44,17 @@ const App = () => (
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/demo" element={<Demo />} />
+        <Route path="/integrations" element={<Integrations />} />
+        <Route path="/careers" element={<Careers />} />
+        <Route path="/cookies" element={<CookiePolicy />} />
+        <Route path="/gdpr" element={<GDPR />} />
+        <Route path="/help" element={<HelpCenter />} />
+        <Route path="/api" element={<ApiDocs />} />
+        <Route path="/status" element={<Status />} />
+        <Route path="/community" element={<Community />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </TooltipProvider>
