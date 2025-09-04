@@ -675,10 +675,34 @@ const Dashboard = () => {
                             } catch (e) { setDebugHtml('Error: ' + String(e)); }
                             setDebugLoading(false);
                           }}>{debugLoading ? 'Checking…' : 'Show Fetched HTML'}</Button>
+                          <Button size="sm" variant="outline" onClick={async () => {
+                            // fetch stored tokens
+                            try {
+                              const u = '/api/debug-domain?domain=' + encodeURIComponent(verification.domain);
+                              const r = await fetch(u);
+                              const j = await r.json().catch(()=>({}));
+                              if (r.ok && Array.isArray(j.tokens)) {
+                                setStoredTokens(j.tokens || []);
+                                toast({ title: 'Stored tokens loaded', description: `${(j.tokens||[]).length} token(s)` });
+                              } else {
+                                toast({ title: 'No tokens', description: 'No stored tokens found.' });
+                              }
+                            } catch (e) { toast({ title: 'Error', description: 'Could not fetch stored tokens.' }); }
+                          }}>Show Stored Token</Button>
                         </div>
                         {debugHtml !== null && (
                           <div className="mt-3 bg-background border rounded p-3 max-h-64 overflow-auto text-xs">
                             <pre className="whitespace-pre-wrap">{debugHtml}</pre>
+                          </div>
+                        )}
+                        {storedTokens.length > 0 && (
+                          <div className="mt-3 bg-background border rounded p-3 text-xs">
+                            <h5 className="font-semibold mb-2">Stored verification tokens</h5>
+                            <ul className="space-y-2">
+                              {storedTokens.map((t:any) => (
+                                <li key={t.id} className="flex items-center justify-between"><code className="font-mono">{t.token}</code><span className="text-xs text-muted-foreground">expires: {t.expires_at || 'n/a'}</span></li>
+                              ))}
+                            </ul>
                           </div>
                         )}
                       </div>
