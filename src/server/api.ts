@@ -840,6 +840,7 @@ export function serverApiPlugin(): Plugin {
 
           return endJson(404, { error: 'Not Found' });
         } catch (e: any) {
+          try { if ((Sentry as any)?.captureException) Sentry.captureException(e); } catch (err) {}
           return endJson(500, { error: 'Server Error' });
         }
       });
