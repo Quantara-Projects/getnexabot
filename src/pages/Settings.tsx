@@ -540,7 +540,24 @@ const Settings = () => {
                         This will remove all uploaded files and reset your chatbot
                       </p>
                     </div>
-                    <Button variant="destructive" className="">
+                    <Button variant="destructive" className="" onClick={async () => {
+                      if (!confirm('Are you sure you want to delete ALL training data? This action cannot be undone.')) return;
+                      try {
+                        const { data: userRes } = await supabase.auth.getUser();
+                        const user = userRes?.user;
+                        if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); return; }
+
+                        await Promise.all([
+                          supabase.from('training_documents').delete().match({ user_id: user.id }),
+                          supabase.from('chatbot_configs').delete().match({ user_id: user.id }),
+                        ].map(p => p.catch(() => null)));
+
+                        toast({ title: 'Deleted', description: 'All training data removed.' });
+                      } catch (e: any) {
+                        console.error(e);
+                        toast({ title: 'Error', description: 'Failed to delete training data', variant: 'destructive' });
+                      }
+                    }}>
                       Delete All Data
                     </Button>
                   </div>
