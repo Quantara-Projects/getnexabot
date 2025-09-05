@@ -34,7 +34,7 @@ const IntegrationsSection = () => {
               <CardContent className="space-y-3 text-muted-foreground">
                 <div className="flex items-start space-x-3"><MessagesSquare className="w-5 h-5 text-primary mt-0.5" /><p>WhatsApp & Messenger Bots – Automate customer engagement.</p></div>
                 <div className="flex items-start space-x-3"><PlugZap className="w-5 h-5 text-primary mt-0.5" /><p>CRM Systems – Enrich customer data with AI insights.</p></div>
-                <div className="flex items-start space-x-3"><Zap className="w-5 h-5 text-primary mt-0.5" /><p>Zapier Integration – Connect NexoBot with 3,000+ apps.</p></div>
+                <div className="flex items-start space-x-3"><Zap className="w-5 h-5 text-primary mt-0.5" /><p>Zapier Integration – Connect NexaBot with 3,000+ apps.</p></div>
               </CardContent>
             </Card>
           </Reveal>
