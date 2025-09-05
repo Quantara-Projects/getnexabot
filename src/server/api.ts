@@ -357,6 +357,22 @@ export function serverApiPlugin(): Plugin {
         res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
         res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
+        // Start a Sentry transaction for this request if available
+        let __sentry_tx: any = null;
+        try {
+          if ((Sentry as any)?.startTransaction) {
+            __sentry_tx = (Sentry as any).startTransaction({ op: 'http.server', name: `${req.method} ${req.url}` });
+            res.on('finish', () => {
+              try {
+                if (__sentry_tx) {
+                  __sentry_tx.setHttpStatus(res.statusCode);
+                  __sentry_tx.finish();
+                }
+              } catch (e) {}
+            });
+          }
+        } catch (e) {}
+
         // In dev allow http; in prod (behind proxy), require https
         if (process.env.NODE_ENV === 'production' && !isHttps(req)) {
           return json(res, 400, { error: 'HTTPS required' }, { 'Access-Control-Allow-Origin': String(corsOrigin) });
