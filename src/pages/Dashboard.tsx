@@ -110,8 +110,6 @@ const Dashboard = () => {
     embedCode: null,
   });
 
-  import { useAuth } from '@/hooks/useAuth';
-
   const { user } = useAuth();
   const [businessName, setBusinessName] = useState<string>('Your Company');
 
