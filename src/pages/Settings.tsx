@@ -576,20 +576,36 @@ const Settings = () => {
                         const user = userRes?.user;
                         if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); return; }
 
-                        // Best-effort: delete user-related rows
-                        await Promise.all([
-                          supabase.from('training_documents').delete().match({ user_id: user.id }),
-                          supabase.from('chatbot_configs').delete().match({ user_id: user.id }),
-                          supabase.from('domain_verifications').delete().match({ user_id: user.id }),
-                          supabase.from('email_verifications').delete().match({ user_id: user.id }),
-                          supabase.from('security_logs').delete().match({ user_id: user.id }),
-                          supabase.from('user_settings').delete().match({ user_id: user.id }),
-                          supabase.from('profiles').delete().match({ user_id: user.id }),
-                        ].map(p => p.catch(() => null)));
+                        // Obtain access token to authenticate the request to our server API
+                        const sessionRes = await supabase.auth.getSession();
+                        const accessToken = (sessionRes as any)?.data?.session?.access_token || '';
 
-                        // Sign out locally
-                        await supabase.auth.signOut();
-                        toast({ title: 'Account deleted', description: 'Local account data removed. Contact support to fully remove authentication records.' });
+                        // Call server-side endpoint to remove auth user AND related DB rows using service role key
+                        try {
+                          const resp = await fetch('/api/delete-account', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                            },
+                            body: JSON.stringify({ userId: user.id }),
+                          });
+
+                          const json = await resp.json().catch(() => ({}));
+                          if (!resp.ok) {
+                            console.warn('delete-account failed', json);
+                            toast({ title: 'Partial', description: 'Failed to fully delete account on server. Local data removed.', variant: 'destructive' });
+                          } else {
+                            toast({ title: 'Account deleted', description: json?.message || 'Your account and data have been deleted.' });
+                          }
+                        } catch (e) {
+                          console.warn('delete-account request error', e);
+                          toast({ title: 'Partial', description: 'Server deletion failed. Local data removed.', variant: 'destructive' });
+                        }
+
+                        // Always attempt to clear local session
+                        try { await supabase.auth.signOut(); } catch {}
+
                         navigate('/');
                       } catch (e: any) {
                         console.error(e);
