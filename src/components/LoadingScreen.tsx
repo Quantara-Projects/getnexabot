@@ -1,41 +1,42 @@
 import React from 'react';
 
-type Props = { onVerify: () => void };
+type Props = {
+  onVerify: () => void;
+  // optional slot to place user-selected content in the center
+  selectedContent?: React.ReactNode;
+  title?: string;
+  subtitle?: string;
+};
 
-const LoadingScreen: React.FC<Props> = ({ onVerify }) => {
-  const robotImg = 'https://cdn.builder.io/api/v1/image/assets%2Ff7636dbc154444f9897eafaf4c70d8a5%2F7dad355231794df38f24a54cb7869668?format=webp&width=800';
-
+const LoadingScreen: React.FC<Props> = ({ onVerify, selectedContent, title = 'Welcome to NexaBot', subtitle = "Tap to continue" }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-white/95 to-white/90 backdrop-blur-sm">
-      <div className="w-full max-w-lg mx-4 p-8 bg-white rounded-2xl shadow-xl text-center">
-        <img src={robotImg} alt="robot" className="mx-auto w-28 h-28 object-contain -mt-12" />
-        <h2 className="mt-2 text-2xl font-bold">Welcome to NexaBot</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Tap the robot to confirm you're human and continue</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-white/96 to-white/90 backdrop-blur-sm">
+      <div className="w-full max-w-xl mx-4 p-8 bg-white rounded-3xl shadow-2xl text-center">
+        <h2 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">{title}</h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">{subtitle}</p>
 
-        <div className="mt-6 flex items-center justify-center">
+        <div className="mt-8 flex items-center justify-center">
           <button
             onClick={onVerify}
-            className="relative group w-40 h-40 rounded-full bg-gradient-to-br from-primary to-violet-600 shadow-lg flex items-center justify-center overflow-hidden focus:outline-none"
-            aria-label="Verify human"
+            className="relative group w-44 h-44 sm:w-56 sm:h-56 rounded-2xl bg-gradient-to-br from-primary to-violet-600 shadow-xl flex items-center justify-center overflow-hidden focus:outline-none"
+            aria-label="Proceed"
           >
-            <span className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-40 transform -translate-x-6 -rotate-12 group-hover:translate-x-0 transition-all duration-700"></span>
-            <svg className="w-24 h-24 transform group-active:scale-95 transition-transform duration-300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="g1" x1="0" x2="1">
-                  <stop offset="0%" stopColor="#fff" stopOpacity="0.9" />
-                  <stop offset="100%" stopColor="#fff" stopOpacity="0.3" />
-                </linearGradient>
-              </defs>
-              <g>
-                <circle cx="50" cy="35" r="18" fill="url(#g1)" />
-                <rect x="30" y="55" width="40" height="22" rx="6" fill="#fff" opacity="0.15" />
-                <circle cx="42" cy="33" r="3" fill="#111827" />
-                <circle cx="58" cy="33" r="3" fill="#111827" />
-                <rect x="44" y="42" width="12" height="4" rx="2" fill="#111827" />
-              </g>
-            </svg>
+            {/* Animated layered shapes */}
+            <div className="absolute w-full h-full flex items-center justify-center">
+              <div className="animate-ring mr-[-4rem]">
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl bg-white/10 backdrop-blur-sm" />
+              </div>
+              <div className="animate-ring-delay">
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-xl bg-white/8 border border-white/10" />
+              </div>
+            </div>
 
-            <span className="absolute -bottom-6 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">Click to continue</span>
+            {/* selected content slot */}
+            <div className="relative z-10 flex items-center justify-center text-white text-sm sm:text-base font-semibold">
+              {selectedContent ? selectedContent : <span className="px-3 py-2 rounded-md bg-white/10">{subtitle}</span>}
+            </div>
+
+            <span className="absolute bottom-3 text-xs text-white/80 opacity-90">{subtitle}</span>
           </button>
         </div>
 
@@ -45,8 +46,14 @@ const LoadingScreen: React.FC<Props> = ({ onVerify }) => {
       </div>
 
       <style>{`
-        @keyframes floaty { 0% { transform: translateY(0);} 50% { transform: translateY(-8px);} 100% { transform: translateY(0);} }
-        .group:hover svg { animation: floaty 2s ease-in-out infinite; }
+        @keyframes ring-rotate { 0% { transform: rotate(0deg) translateX(0); } 50% { transform: rotate(12deg) translateX(4px); } 100% { transform: rotate(0deg) translateX(0); } }
+        @keyframes ring-morph { 0% { border-radius: 22px; } 50% { border-radius: 12px; } 100% { border-radius: 22px; } }
+        .animate-ring > div { animation: ring-morph 3.2s ease-in-out infinite; box-shadow: 0 10px 30px rgba(99,102,241,0.12); }
+        .animate-ring { animation: ring-rotate 5s linear infinite; }
+        .animate-ring-delay { animation: ring-rotate 7s linear infinite reverse; opacity: 0.9; }
+
+        /* subtle float on hover */
+        .group:hover .animate-ring > div, .group:hover .animate-ring-delay > div { transform: translateY(-6px); transition: transform .45s cubic-bezier(.2,.9,.4,1); }
       `}</style>
     </div>
   );
