@@ -1,0 +1,12 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+  functions = "netlify/functions"
+
+[dev]
+  command = "npm run dev"
+
+# Note: Do NOT put secrets here. Set environment variables in Netlify UI (Site settings > Build & deploy > Environment)
+
+[build.environment]
+  NODE_ENV = "production"
