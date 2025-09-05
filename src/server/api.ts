@@ -373,6 +373,11 @@ export function serverApiPlugin(): Plugin {
 
         const endJson = (status: number, data: any) => json(res, status, data, { 'Access-Control-Allow-Origin': String(corsOrigin) });
 
+        // Health check endpoint
+        if (req.url === '/health' && req.method === 'GET') {
+          return endJson(200, { ok: true, uptime: process.uptime(), timestamp: new Date().toISOString() });
+        }
+
         try {
           if (req.url === '/api/train' && req.method === 'POST') {
             const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
