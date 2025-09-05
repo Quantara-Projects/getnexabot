@@ -662,8 +662,7 @@ const Dashboard = () => {
                           {state.training.inProgress ? 'Training in progress…' : 'Start Training'}
                         </Button>
 
-                        <div className="flex gap-3">
-                          <Button variant="outline" onClick={analyzeSite} className="flex-1">Analyze with A.I.</Button>
+                        <div className="flex justify-end">
                           <Button variant="ghost" onClick={() => { try { localStorage.removeItem(memoryKey); setAiAnalysis(null); toast({ title: 'Memory cleared', description: 'Local AI memory removed.' }); } catch {} }}>Clear Memory</Button>
                         </div>
 
