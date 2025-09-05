@@ -43,7 +43,14 @@ const App = () => {
   }, [verified]);
 
   if (!verified) {
-    return <LoadingScreen onVerify={() => setVerified(true)} />;
+    return (
+      <LoadingScreen
+        onVerify={() => setVerified(true)}
+        title="Loading..."
+        subtitle="Preparing your experience"
+        selectedContent={<img src="https://cdn.builder.io/api/v1/image/assets%2Ff7636dbc154444f9897eafaf4c70d8a5%2Fcbd065bb4fda4ac99cd7d9b6e002e947?format=webp&width=800" alt="selected" className="w-20 h-20 object-contain" />}
+      />
+    );
   }
 
   return (
