@@ -305,23 +305,25 @@ const Dashboard = () => {
   }, [memoryKey]);
 
   // Analyze website using server-side AI and store memory locally (per user)
-  const analyzeSite = async () => {
+  const analyzeSite = async (): Promise<string | null> => {
     const url = state.websiteUrl.trim();
-    if (!url || !isValidHttpUrl(url)) { toast({ title: 'Invalid URL', description: 'Enter a valid website URL to analyze.', variant: 'destructive' }); return; }
+    if (!url || !isValidHttpUrl(url)) { toast({ title: 'Invalid URL', description: 'Enter a valid website URL to analyze.', variant: 'destructive' }); return null; }
     try {
       toast({ title: 'Analyzing', description: 'AI is analyzing your website content...' });
       const res = await fetch('/api/analyze-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
         toast({ title: 'Analysis failed', description: data?.message || 'Unable to analyze site.' , variant: 'destructive'});
-        return;
+        return null;
       }
       // store analysis string locally as memory
       const analysisStr = typeof data.analysis === 'string' ? data.analysis : JSON.stringify(data.analysis);
       try { localStorage.setItem(memoryKey, analysisStr); setAiAnalysis(analysisStr); } catch {}
       toast({ title: 'Analysis saved', description: 'AI analysis stored locally for your account.' });
+      return analysisStr;
     } catch (e) {
       toast({ title: 'Analysis error', description: 'Failed to analyze site.', variant: 'destructive' });
+      return null;
     }
   };
 
