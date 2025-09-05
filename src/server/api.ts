@@ -659,7 +659,7 @@ export function serverApiPlugin(): Plugin {
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:16px 24px;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">© ${new Date().getFullYear()} NexaBot. All rights reserved.</td>
+                        <td style="padding:16px 24px;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">© 2025 NexaBot. All rights reserved.</td>
                       </tr>
                     </table>
                   </td></tr>

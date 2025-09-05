@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 const Settings = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [settings, setSettings] = useState({
     // Account Settings
     name: 'John Doe',
@@ -569,52 +571,64 @@ const Settings = () => {
                         Permanently delete your account and all associated data
                       </p>
                     </div>
-                    <Button variant="destructive" className="" onClick={async () => {
-                      if (!confirm('Are you sure you want to delete your account and ALL data? This cannot be undone.')) return;
-                      try {
-                        const { data: userRes } = await supabase.auth.getUser();
-                        const user = userRes?.user;
-                        if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); return; }
-
-                        // Obtain access token to authenticate the request to our server API
-                        const sessionRes = await supabase.auth.getSession();
-                        const accessToken = (sessionRes as any)?.data?.session?.access_token || '';
-
-                        // Call server-side endpoint to remove auth user AND related DB rows using service role key
-                        try {
-                          const resp = await fetch('/api/delete-account', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-                            },
-                            body: JSON.stringify({ userId: user.id }),
-                          });
-
-                          const json = await resp.json().catch(() => ({}));
-                          if (!resp.ok) {
-                            console.warn('delete-account failed', json);
-                            toast({ title: 'Partial', description: 'Failed to fully delete account on server. Local data removed.', variant: 'destructive' });
-                          } else {
-                            toast({ title: 'Account deleted', description: json?.message || 'Your account and data have been deleted.' });
-                          }
-                        } catch (e) {
-                          console.warn('delete-account request error', e);
-                          toast({ title: 'Partial', description: 'Server deletion failed. Local data removed.', variant: 'destructive' });
-                        }
-
-                        // Always attempt to clear local session
-                        try { await supabase.auth.signOut(); } catch {}
-
-                        navigate('/');
-                      } catch (e: any) {
-                        console.error(e);
-                        toast({ title: 'Error', description: 'Failed to delete account', variant: 'destructive' });
-                      }
-                    }}>
+                    <Button variant="destructive" className="" onClick={() => setShowDeleteModal(true)}>
                       Delete Account
                     </Button>
                   </div>
+
+                  {showDeleteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                      <div className="bg-white rounded-xl p-6 w-full max-w-md text-center shadow-lg">
+                        <h3 className="text-lg font-semibold mb-3">Are you sure you want to delete this account?</h3>
+                        <p className="text-sm text-muted-foreground mb-6">This action is irreversible and will permanently remove your data.</p>
+                        <div className="flex items-center justify-center gap-4">
+                          <Button variant="destructive" onClick={async () => {
+                            try {
+                              setDeleting(true);
+                              const { data: userRes } = await supabase.auth.getUser();
+                              const user = userRes?.user;
+                              if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); setDeleting(false); setShowDeleteModal(false); return; }
+
+                              const sessionRes = await supabase.auth.getSession();
+                              const accessToken = (sessionRes as any)?.data?.session?.access_token || '';
+
+                              const resp = await fetch('/api/delete-account', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                                },
+                                body: JSON.stringify({ userId: user.id }),
+                              });
+
+                              const json = await resp.json().catch(() => ({}));
+                              if (!resp.ok) {
+                                toast({ title: 'Partial', description: 'Failed to fully delete account on server. Local data removed.', variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Account deleted', description: json?.message || 'Your account and data have been deleted.' });
+                              }
+
+                              try { await supabase.auth.signOut(); } catch {}
+                              setShowDeleteModal(false);
+                              navigate('/');
+                            } catch (e: any) {
+                              console.error(e);
+                              toast({ title: 'Error', description: 'Failed to delete account', variant: 'destructive' });
+                              setShowDeleteModal(false);
+                            } finally {
+                              setDeleting(false);
+                            }
+                          }}>
+                            Continue
+                          </Button>
+
+                          <Button variant="outline" onClick={() => { setShowDeleteModal(false); setDeleting(false); }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
