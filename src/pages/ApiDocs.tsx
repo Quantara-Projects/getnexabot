@@ -31,13 +31,13 @@ const ApiDocs = () => {
                 <li>Authentication – Secure via API keys or OAuth2.</li>
                 <li>Endpoints: /chat, /train, /status</li>
                 <li>Rate Limits – Free tier: 1000 requests/month, scalable plans available.</li>
-                <li>Error Codes – Detailed responses with guidance.</li>
+                <li>Error Codes ��� Detailed responses with guidance.</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Example Request</h3>
               <pre className="bg-secondary/30 p-3 rounded overflow-x-auto text-xs">
-{`curl -X POST "https://api.nexobot.ai/chat" \\
+{`curl -X POST "https://api.nexabot.ai/chat" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "Hello, bot!"}'`}
