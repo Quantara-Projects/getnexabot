@@ -7,6 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import CustomCaptcha from '@/components/CustomCaptcha';
+import { getServerApiPath } from '@/lib/api';
 
 const Signup = () => {
   const navigate = useNavigate();
