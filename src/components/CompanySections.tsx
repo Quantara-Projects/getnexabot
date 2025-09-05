@@ -13,13 +13,13 @@ const CompanySections = () => {
         <div id="about">
           <Reveal className="text-center mb-6">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">About Us</h2>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">At NexoBot, we believe AI should be accessible, secure, and powerful enough to simplify lives.</p>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">At NexaBot, we believe AI should be accessible, secure, and powerful enough to simplify lives.</p>
           </Reveal>
           <Reveal>
             <Card>
               <CardContent className="space-y-4 pt-6 text-muted-foreground">
                 <p>Our journey began with a simple idea: what if every individual and business could have an intelligent assistant that understands their needs, adapts to their workflows, and integrates seamlessly into their daily tools?</p>
-                <p>Founded in 2025, we set out to build an AI platform that combines cutting-edge natural language processing with enterprise-grade security. Today, NexoBot is trusted by students, freelancers, and companies to handle everyday tasks—from analyzing documents to automating customer support.</p>
+                <p>Founded in 2025, we set out to build an AI platform that combines cutting-edge natural language processing with enterprise-grade security. Today, NexaBot is trusted by students, freelancers, and companies to handle everyday tasks—from analyzing documents to automating customer support.</p>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-start space-x-3"><Rocket className="w-5 h-5 text-primary mt-0.5" /><p><b>Innovation First</b> – pushing the boundaries of what AI can achieve.</p></div>
                   <div className="flex items-start space-x-3"><Shield className="w-5 h-5 text-primary mt-0.5" /><p><b>Security Always</b> – protecting user data through encryption and strict compliance.</p></div>
@@ -56,7 +56,7 @@ const CompanySections = () => {
                     <ul className="list-disc pl-5 space-y-1">
                       <li>How AI Is Transforming Remote Work in 2025</li>
                       <li>5 Ways to Supercharge Your Customer Support with AI</li>
-                      <li>Step-by-Step: Training Your NexoBot on Company Documents</li>
+                      <li>Step-by-Step: Training Your NexaBot on Company Documents</li>
                     </ul>
                   </div>
                 </div>
@@ -112,9 +112,9 @@ const CompanySections = () => {
           <Reveal>
             <Card>
               <CardContent className="pt-6 text-muted-foreground space-y-3">
-                <p>General: support@nexobot.ai</p>
-                <p>Business/partnerships: business@nexobot.ai</p>
-                <p>Press: press@nexobot.ai</p>
+                <p>General: support@nexabot.ai</p>
+                <p>Business/partnerships: business@nexabot.ai</p>
+                <p>Press: press@nexabot.ai</p>
                 <Button variant="outline" className="mt-2" onClick={() => navigate('/contact')}>Open Contact Form</Button>
               </CardContent>
             </Card>

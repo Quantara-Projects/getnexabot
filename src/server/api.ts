@@ -1,6 +1,17 @@
 import type { Plugin } from 'vite';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import * as Sentry from '@sentry/node';
+
+// Initialize Sentry if DSN provided
+try {
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05, environment: process.env.NODE_ENV });
+  }
+} catch (e) {
+  // ignore Sentry init errors in dev
+  console.warn('Sentry init failed', e);
+}
 
 // Small JSON body parser with size limit
 async function parseJson(req: any, limit = 1024 * 100) {
@@ -61,6 +72,18 @@ async function supabaseFetch(path: string, options: any, req: any) {
     'Content-Type': 'application/json',
   };
   if (token) headers['Authorization'] = token;
+  return fetch(`${base}${path}`, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
+}
+
+// Supabase admin fetch using service role key (server-side only)
+async function supabaseAdminFetch(path: string, options: any = {}, req: any) {
+  const base = requireEnv('SUPABASE_URL');
+  const serviceKey = requireEnv('SUPABASE_SERVICE_KEY');
+  const headers: Record<string, string> = {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    'Content-Type': 'application/json',
+  };
   return fetch(`${base}${path}`, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
 }
 
@@ -334,6 +357,22 @@ export function serverApiPlugin(): Plugin {
         res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
         res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
+        // Start a Sentry transaction for this request if available
+        let __sentry_tx: any = null;
+        try {
+          if ((Sentry as any)?.startTransaction) {
+            __sentry_tx = (Sentry as any).startTransaction({ op: 'http.server', name: `${req.method} ${req.url}` });
+            res.on('finish', () => {
+              try {
+                if (__sentry_tx) {
+                  __sentry_tx.setHttpStatus(res.statusCode);
+                  __sentry_tx.finish();
+                }
+              } catch (e) {}
+            });
+          }
+        } catch (e) {}
+
         // In dev allow http; in prod (behind proxy), require https
         if (process.env.NODE_ENV === 'production' && !isHttps(req)) {
           return json(res, 400, { error: 'HTTPS required' }, { 'Access-Control-Allow-Origin': String(corsOrigin) });
@@ -349,6 +388,24 @@ export function serverApiPlugin(): Plugin {
         }
 
         const endJson = (status: number, data: any) => json(res, status, data, { 'Access-Control-Allow-Origin': String(corsOrigin) });
+
+        // Health check endpoint
+        if (req.url === '/health' && req.method === 'GET') {
+          return endJson(200, { ok: true, uptime: process.uptime(), timestamp: new Date().toISOString() });
+        }
+
+        // Sentry test endpoint: capture a message
+        if (req.url === '/api/sentry-test' && req.method === 'GET') {
+          try { if ((Sentry as any)?.captureMessage) (Sentry as any).captureMessage('Sentry test message from /api/sentry-test'); } catch (e) {}
+          return endJson(200, { ok: true, message: 'Sentry test message sent' });
+        }
+
+        // Trigger error endpoint: sends an error to Sentry and returns 500
+        if (req.url === '/api/trigger-error' && req.method === 'GET') {
+          const err = new Error('Test error triggered from /api/trigger-error');
+          try { if ((Sentry as any)?.captureException) (Sentry as any).captureException(err); } catch (e) {}
+          return endJson(500, { ok: false, error: 'Test error triggered' });
+        }
 
         try {
           if (req.url === '/api/train' && req.method === 'POST') {
@@ -579,16 +636,62 @@ export function serverApiPlugin(): Plugin {
             const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
             if (!rateLimit('chat:' + ip, 60, 60_000)) return endJson(429, { error: 'Too Many Requests' });
             const body = await parseJson(req).catch(() => ({}));
-            const message = String(body?.message || '').slice(0, 2000);
+            const message = String(body?.message || '').slice(0, 3000);
+            const memory = String(body?.memory || '').slice(0, 20000);
+            const imageNote = body?.image ? 'IMAGE_PROVIDED' : null;
             if (!message) return endJson(400, { error: 'Empty message' });
 
             await supabaseFetch('/rest/v1/security_logs', {
               method: 'POST',
-              body: JSON.stringify({ action: 'CHAT', details: { len: message.length } }),
+              body: JSON.stringify({ action: 'CHAT', details: { len: message.length, hasImage: !!body?.image } }),
             }, req).catch(() => null);
 
-            const reply = "I'm still learning, but our team will get back to you soon.";
-            return endJson(200, { reply });
+            // If no OPENAI key, fallback
+            const openaiKey = process.env.OPENAI_API_KEY;
+            if (!openaiKey) return endJson(200, { reply: "AI not configured on server." });
+
+            // Build prompt: restrict to website troubleshooting and use provided local memory
+            const systemPrompt = `You are a technical assistant specialized in analyzing websites and diagnosing issues, bugs, and configuration problems. ONLY answer questions related to the website, its content, code, deployment, or configuration. If the user's question is not about the website or its issues, respond exactly: \":Sorry I can't answer that question since i am design to answer your questions about the issue/bugs or reports on the website.\"`;
+            const userPrompt = `Memory:\n${memory}\n\nUser question:\n${message}\n\nIf an image was provided, note that: ${imageNote || 'none'}\n\nProvide a concise, actionable diagnostic and suggested fixes. If you need to ask for more details, ask clearly. Limit the answer to 800 words.`;
+
+            try {
+              const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], max_tokens: 800 }),
+              });
+              if (!resp.ok) return endJson(200, { reply: "AI request failed" });
+              const j = await resp.json();
+              const reply = j?.choices?.[0]?.message?.content || "";
+              return endJson(200, { reply });
+            } catch (e) {
+              return endJson(500, { error: 'AI error' });
+            }
+          }
+
+          // Analyze URL content with OpenAI
+          if (req.url === '/api/analyze-url' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const url = String(body?.url || '').trim();
+            if (!url) return endJson(400, { error: 'Missing url' });
+            const text = await tryFetchUrlText(url).catch(() => '');
+            if (!text) return endJson(400, { error: 'Could not fetch url' });
+            const openaiKey = process.env.OPENAI_API_KEY;
+            if (!openaiKey) return endJson(200, { ok: false, message: 'AI not configured' });
+            const prompt = `You are an AI that analyzes a website given its extracted text. Provide: 1) a short purpose summary, 2) main features and functionality, 3) potential issues or improvements, 4) a breakdown of the content structure (headings, top paragraphs), and 5) extract any meta tags or contact info found. Respond in JSON with keys: summary, features, issues, structure, meta.`;
+            try {
+              const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: 'You are a helpful analyzer.' }, { role: 'user', content: prompt + '\n\nContent:\n' + text }], max_tokens: 1000 }),
+              });
+              if (!resp.ok) return endJson(200, { ok: false, message: 'AI request failed' });
+              const j = await resp.json();
+              const analysis = j?.choices?.[0]?.message?.content || '';
+              return endJson(200, { ok: true, analysis, raw: text });
+            } catch (e) {
+              return endJson(500, { error: 'AI analyze error' });
+            }
           }
 
           // Custom email verification: send email
@@ -647,7 +750,7 @@ export function serverApiPlugin(): Plugin {
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding:16px 24px;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">© ${new Date().getFullYear()} NexaBot. All rights reserved.</td>
+                        <td style="padding:16px 24px;color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb">© 2025 NexaBot. All rights reserved.</td>
                       </tr>
                     </table>
                   </td></tr>
@@ -698,8 +801,75 @@ export function serverApiPlugin(): Plugin {
             return res.end(`<!doctype html><meta http-equiv="refresh" content="2;url=/"><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#111827;display:grid;place-items:center;height:100vh}</style><div><h1>✅ Email verified</h1><p>You can close this tab.</p></div>`);
           }
 
+          // Delete account (server-side): removes storage objects, DB rows and Supabase auth user using service role key
+          if (req.url === '/api/delete-account' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const userId = String(body?.userId || '').trim();
+            if (!userId) return endJson(400, { error: 'Missing userId' });
+
+            // Verify requester is the same user (must provide Authorization header with user token)
+            try {
+              const ures = await supabaseFetch('/auth/v1/user', { method: 'GET' }, req).catch(() => null);
+              if (!ures || !(ures as any).ok) return endJson(401, { error: 'Unauthorized' });
+              const caller = await (ures as Response).json().catch(() => null);
+              if (!caller || caller.id !== userId) return endJson(403, { error: 'Forbidden' });
+            } catch (e) {
+              return endJson(401, { error: 'Unauthorized' });
+            }
+
+            // Gather training document sources before deleting DB rows so we can remove related storage objects
+            let storageSources: string[] = [];
+            try {
+              const r = await supabaseAdminFetch(`/rest/v1/training_documents?user_id=eq.${encodeURIComponent(userId)}&select=source`, { method: 'GET' }, req).catch(() => null);
+              if (r && (r as any).ok) {
+                const arr = await (r as Response).json().catch(() => []);
+                if (Array.isArray(arr)) {
+                  storageSources = arr.map((x: any) => String(x?.source || '')).filter(Boolean);
+                }
+              }
+            } catch (e) {
+              // ignore errors here
+            }
+
+            // Attempt to delete storage objects referenced by training_documents (bucket: 'training')
+            let deletedStorage = 0;
+            try {
+              for (const src of storageSources) {
+                if (!src) continue;
+                // Skip absolute URLs
+                if (/^https?:\/\//i.test(src)) continue;
+                try {
+                  const del = await supabaseAdminFetch(`/storage/v1/object/training/${encodeURIComponent(src)}`, { method: 'DELETE' }, req).catch(() => null);
+                  if (del && (del as any).ok) deletedStorage++;
+                } catch (e) {
+                  // ignore individual delete failures
+                }
+              }
+            } catch (e) {}
+
+            // Best-effort: delete user-related rows using service role key
+            const tables = ['training_documents','chatbot_configs','domain_verifications','email_verifications','security_logs','user_settings','profiles'];
+            for (const t of tables) {
+              try {
+                await supabaseAdminFetch(`/rest/v1/${t}?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' }, req).catch(() => null);
+              } catch (e) {}
+            }
+
+            // Delete auth user via Supabase admin API
+            try {
+              const adminRes = await supabaseAdminFetch(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }, req).catch(() => null);
+              if (!adminRes || !(adminRes as any).ok) {
+                return endJson(200, { ok: true, deletedAuth: false, deletedStorage, message: 'User data removed; failed to delete auth record.' });
+              }
+              return endJson(200, { ok: true, deletedAuth: true, deletedStorage });
+            } catch (e) {
+              return endJson(200, { ok: true, deletedAuth: false, deletedStorage, message: 'User data removed; failed to delete auth record.' });
+            }
+          }
+
           return endJson(404, { error: 'Not Found' });
         } catch (e: any) {
+          try { if ((Sentry as any)?.captureException) Sentry.captureException(e); } catch (err) {}
           return endJson(500, { error: 'Server Error' });
         }
       });

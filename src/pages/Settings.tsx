@@ -8,15 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [settings, setSettings] = useState({
     // Account Settings
     name: 'John Doe',
-    email: 'john@acme.com',
-    businessName: 'Acme Corp',
+    email: 'john@quantara.com',
+    businessName: 'Quantara Corp',
     password: '',
     
     // Website Customization
@@ -85,6 +88,8 @@ const Settings = () => {
     root.style.setProperty('--secondary', hexToHsl(secondaryHex));
   };
 
+  const { toast } = useToast();
+
   const handleSave = async () => {
     try {
       localStorage.setItem('app_settings', JSON.stringify(settings));
@@ -105,7 +110,12 @@ const Settings = () => {
           website_url: settings.websiteUrl,
         }, { onConflict: 'user_id' } as any);
       }
-    } catch {}
+
+      toast({ title: 'Saved', description: 'Settings saved successfully.' });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: 'Error', description: 'Failed to save settings.', variant: 'destructive' });
+    }
   };
 
   return (
@@ -532,7 +542,24 @@ const Settings = () => {
                         This will remove all uploaded files and reset your chatbot
                       </p>
                     </div>
-                    <Button variant="destructive" className="">
+                    <Button variant="destructive" className="" onClick={async () => {
+                      if (!confirm('Are you sure you want to delete ALL training data? This action cannot be undone.')) return;
+                      try {
+                        const { data: userRes } = await supabase.auth.getUser();
+                        const user = userRes?.user;
+                        if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); return; }
+
+                        await Promise.all([
+                          supabase.from('training_documents').delete().match({ user_id: user.id }),
+                          supabase.from('chatbot_configs').delete().match({ user_id: user.id }),
+                        ].map(p => p.catch(() => null)));
+
+                        toast({ title: 'Deleted', description: 'All training data removed.' });
+                      } catch (e: any) {
+                        console.error(e);
+                        toast({ title: 'Error', description: 'Failed to delete training data', variant: 'destructive' });
+                      }
+                    }}>
                       Delete All Data
                     </Button>
                   </div>
@@ -544,10 +571,64 @@ const Settings = () => {
                         Permanently delete your account and all associated data
                       </p>
                     </div>
-                    <Button variant="destructive" className="">
+                    <Button variant="destructive" className="" onClick={() => setShowDeleteModal(true)}>
                       Delete Account
                     </Button>
                   </div>
+
+                  {showDeleteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                      <div className="bg-white rounded-xl p-6 w-full max-w-md text-center shadow-lg">
+                        <h3 className="text-lg font-semibold mb-3">Are you sure you want to delete this account?</h3>
+                        <p className="text-sm text-muted-foreground mb-6">This action is irreversible and will permanently remove your data.</p>
+                        <div className="flex items-center justify-center gap-4">
+                          <Button variant="destructive" onClick={async () => {
+                            try {
+                              setDeleting(true);
+                              const { data: userRes } = await supabase.auth.getUser();
+                              const user = userRes?.user;
+                              if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); setDeleting(false); setShowDeleteModal(false); return; }
+
+                              const sessionRes = await supabase.auth.getSession();
+                              const accessToken = (sessionRes as any)?.data?.session?.access_token || '';
+
+                              const resp = await fetch('/api/delete-account', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                                },
+                                body: JSON.stringify({ userId: user.id }),
+                              });
+
+                              const json = await resp.json().catch(() => ({}));
+                              if (!resp.ok) {
+                                toast({ title: 'Partial', description: 'Failed to fully delete account on server. Local data removed.', variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Account deleted', description: json?.message || 'Your account and data have been deleted.' });
+                              }
+
+                              try { await supabase.auth.signOut(); } catch {}
+                              setShowDeleteModal(false);
+                              navigate('/');
+                            } catch (e: any) {
+                              console.error(e);
+                              toast({ title: 'Error', description: 'Failed to delete account', variant: 'destructive' });
+                              setShowDeleteModal(false);
+                            } finally {
+                              setDeleting(false);
+                            }
+                          }}>
+                            Continue
+                          </Button>
+
+                          <Button variant="outline" onClick={() => { setShowDeleteModal(false); setDeleting(false); }}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

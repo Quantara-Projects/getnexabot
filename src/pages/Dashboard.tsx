@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -109,7 +110,23 @@ const Dashboard = () => {
     embedCode: null,
   });
 
-  const businessName = 'Acme Corp';
+  const { user } = useAuth();
+  const [businessName, setBusinessName] = useState<string>('Your Company');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const metaName = (user as any)?.user_metadata?.business_name;
+        if (metaName && mounted) { setBusinessName(metaName); return; }
+        if (user) {
+          const { data, error } = await supabase.from('profiles').select('business_name').eq('user_id', user.id).limit(1).single();
+          if (!error && data?.business_name && mounted) setBusinessName(data.business_name);
+        }
+      } catch (e) { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [user]);
 
   // Load from localStorage (do not restore setupStep — default to Train Bot)
   useEffect(() => {
@@ -205,6 +222,18 @@ const Dashboard = () => {
       return;
     }
 
+    // Run AI analysis first (stores local memory) — required before training
+    let analysis: string | null = null;
+    try {
+      analysis = await analyzeSite();
+      if (!analysis) {
+        toast({ title: 'AI analysis warning', description: 'AI analysis could not be completed. Training will proceed without the local memory.', variant: 'destructive' });
+      }
+    } catch (e) {
+      // continue even if analysis fails
+      console.warn('analyzeSite error', e);
+    }
+
     setState((s) => ({ ...s, training: { inProgress: true, progress: 0, completed: false, error: null } }));
 
     try {
@@ -237,7 +266,7 @@ const Dashboard = () => {
       const res = await fetch('/api/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths }),
+        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths, memory: analysis || aiAnalysis || null }),
         signal: controller.signal,
       }).catch((err) => ({ ok: false, status: 0, error: err } as any));
       clearTimeout(timeout);
@@ -262,9 +291,44 @@ const Dashboard = () => {
     }
   };
 
-  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
   const [debugHtml, setDebugHtml] = useState<string | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
+
+  // AI analysis memory (local per user)
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const memoryKey = `nexabot_memory_${(user as any)?.id || 'anon'}`;
+
+  useEffect(() => {
+    try {
+      const mem = localStorage.getItem(memoryKey);
+      if (mem) setAiAnalysis(mem);
+    } catch {}
+  }, [memoryKey]);
+
+  // Analyze website using server-side AI and store memory locally (per user)
+  const analyzeSite = async (): Promise<string | null> => {
+    const url = state.websiteUrl.trim();
+    if (!url || !isValidHttpUrl(url)) { toast({ title: 'Invalid URL', description: 'Enter a valid website URL to analyze.', variant: 'destructive' }); return null; }
+    try {
+      toast({ title: 'Analyzing', description: 'AI is analyzing your website content...' });
+      const res = await fetch('/api/analyze-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        toast({ title: 'Analysis failed', description: data?.message || 'Unable to analyze site.' , variant: 'destructive'});
+        return null;
+      }
+      // store analysis string locally as memory
+      const analysisStr = typeof data.analysis === 'string' ? data.analysis : JSON.stringify(data.analysis);
+      try { localStorage.setItem(memoryKey, analysisStr); setAiAnalysis(analysisStr); } catch {}
+      toast({ title: 'Analysis saved', description: 'AI analysis stored locally for your account.' });
+      return analysisStr;
+    } catch (e) {
+      toast({ title: 'Analysis error', description: 'Failed to analyze site.', variant: 'destructive' });
+      return null;
+    }
+  };
+
+  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
 
   const verifyDomain = async (domain: string, token: string, tokenId?: string) => {
     try {
@@ -322,8 +386,12 @@ const Dashboard = () => {
         botId = `bot_${btoa(host).replace(/=+$/,'')}`;
       }
 
-      const origin = window.location.origin.replace(/:\d+$/, '') || window.location.origin;
-      const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
+      // Single-line embed code with customization attributes (local-only for each user)
+      const attrs: string[] = [];
+      if (widgetToken) attrs.push(`data-widget-token="${widgetToken}"`);
+      if (state.customization.botName) attrs.push(`data-bot-name="${encodeURIComponent(state.customization.botName)}"`);
+      if (state.customization.buttonColor) attrs.push(`data-button-color="${encodeURIComponent(state.customization.buttonColor)}"`);
+      const embed = `<script src="${window.location.origin}/install.js" data-bot-id="${botId}" ${attrs.join(' ')} async></script>`;
       setState((s) => ({ ...s, botId, embedCode: embed }));
       toast({ title: 'Website chat connected', description: 'Embed code generated.' });
     } catch {
@@ -349,7 +417,7 @@ const Dashboard = () => {
         const data = await (res as Response).json().catch(() => ({}));
         const botId = data.botId || state.botId;
         const widgetToken = data.widgetToken || null;
-        const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
+        const embed = `<!-- NexaBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
         setState((s) => ({ ...s, botId, embedCode: embed }));
         toast({ title: 'Launched', description: 'Your bot is live. Copy the embed code.' });
       } else {
@@ -594,12 +662,24 @@ const Dashboard = () => {
                         >
                           {state.training.inProgress ? 'Training in progress…' : 'Start Training'}
                         </Button>
+
+                        <div className="flex justify-end">
+                          <Button variant="ghost" onClick={() => { try { localStorage.removeItem(memoryKey); setAiAnalysis(null); toast({ title: 'Memory cleared', description: 'Local AI memory removed.' }); } catch {} }}>Clear Memory</Button>
+                        </div>
+
                         {(state.training.inProgress || state.training.completed) && (
                           <div className="space-y-2">
                             <Progress value={state.training.progress} />
                             <p className="text-xs text-muted-foreground">
                               {state.training.inProgress ? 'Processing your data securely…' : state.training.completed ? 'Training completed' : ''}
                             </p>
+                          </div>
+                        )}
+
+                        {aiAnalysis && (
+                          <div className="mt-4 bg-background border rounded p-3 text-sm">
+                            <h4 className="font-semibold mb-2">A.I. Analysis (local)</h4>
+                            <div className="max-h-40 overflow-auto text-xs whitespace-pre-wrap">{aiAnalysis}</div>
                           </div>
                         )}
                       </div>

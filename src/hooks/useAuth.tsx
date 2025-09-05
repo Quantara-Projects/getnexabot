@@ -29,8 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await supabase.from('profiles').insert({
           user_id: u.id,
           full_name: u.user_metadata?.full_name || null,
-          business_name: null,
-          website_url: null,
+          business_name: u.user_metadata?.business_name || null,
+          website_url: u.user_metadata?.website_url || null,
         });
       }
       const { data: settings } = await supabase
@@ -45,6 +45,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Auto-logout if user hasn't been active for 30 days
+    const THIRTY_DAYS_MS = 1000 * 60 * 60 * 24 * 30;
+    const LAST_ACTIVE_KEY = 'lastActive';
+
+    const updateLastActive = () => {
+      try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch {}
+    };
+
+    // Update last active on interactions
+    window.addEventListener('visibilitychange', updateLastActive);
+    window.addEventListener('mousemove', updateLastActive);
+    window.addEventListener('keydown', updateLastActive);
+    window.addEventListener('focus', updateLastActive);
+
+    // Check on init
+    try {
+      const raw = localStorage.getItem(LAST_ACTIVE_KEY);
+      if (raw) {
+        const last = Number(raw) || 0;
+        if (Date.now() - last > THIRTY_DAYS_MS) {
+          // Too long, sign out and clear session
+          try { supabase.auth.signOut(); } catch {}
+          try { localStorage.removeItem(LAST_ACTIVE_KEY); } catch {}
+        }
+      }
+      updateLastActive();
+    } catch {}
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
@@ -73,7 +101,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) await ensureProfileAndSettings(session.user);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('visibilitychange', updateLastActive);
+      window.removeEventListener('mousemove', updateLastActive);
+      window.removeEventListener('keydown', updateLastActive);
+      window.removeEventListener('focus', updateLastActive);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, metadata?: any) => {

@@ -24,20 +24,20 @@ const ApiDocs = () => {
             <CardTitle>API Docs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-muted-foreground">
-            <p>For developers who want to integrate NexoBot into their systems.</p>
+            <p>For developers who want to integrate NexaBot into their systems.</p>
             <div>
               <h3 className="font-semibold mb-2">API Highlights</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Authentication – Secure via API keys or OAuth2.</li>
                 <li>Endpoints: /chat, /train, /status</li>
                 <li>Rate Limits – Free tier: 1000 requests/month, scalable plans available.</li>
-                <li>Error Codes – Detailed responses with guidance.</li>
+                <li>Error Codes ��� Detailed responses with guidance.</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Example Request</h3>
               <pre className="bg-secondary/30 p-3 rounded overflow-x-auto text-xs">
-{`curl -X POST "https://api.nexobot.ai/chat" \\
+{`curl -X POST "https://api.nexabot.ai/chat" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "Hello, bot!"}'`}

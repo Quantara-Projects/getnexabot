@@ -35,7 +35,7 @@ const GDPR = () => {
                 <li>Right to Object/Restrict – Limit how your data is processed.</li>
               </ul>
             </div>
-            <p>To make a request, email privacy@nexobot.ai. All GDPR inquiries are handled within 30 days.</p>
+            <p>To make a request, email privacy@nexabot.ai. All GDPR inquiries are handled within 30 days.</p>
           </CardContent>
         </Card>
       </div>

@@ -31,7 +31,7 @@ const HelpCenter = () => {
                 <li>Getting Started – Creating an account, setting up your first bot.</li>
                 <li>Account & Billing – Managing subscriptions, invoices, and upgrades.</li>
                 <li>Bot Training – Uploading documents and customizing your AI.</li>
-                <li>Integrations – Adding NexoBot to Slack, Discord, or your website.</li>
+                <li>Integrations – Adding NexaBot to Slack, Discord, or your website.</li>
                 <li>Security & Privacy – How we protect your data.</li>
               </ul>
             </div>

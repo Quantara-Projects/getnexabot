@@ -25,7 +25,7 @@ const Contact = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    // form submission handled server-side; do not log sensitive data in production.
   };
 
   return (
@@ -158,9 +158,9 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">Email Support</h3>
-                    <p className="text-muted-foreground text-sm">support@nexobot.ai</p>
+                    <p className="text-muted-foreground text-sm">support@nexabot.ai</p>
                     <p className="text-xs text-muted-foreground">24-48 hour response time</p>
-                    <p className="text-muted-foreground text-sm mt-2">business@nexobot.ai • press@nexobot.ai</p>
+                    <p className="text-muted-foreground text-sm mt-2">business@nexabot.ai • press@nexabot.ai</p>
                   </div>
                 </div>
 
