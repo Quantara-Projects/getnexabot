@@ -112,7 +112,7 @@ const CompanySections = () => {
           <Reveal>
             <Card>
               <CardContent className="pt-6 text-muted-foreground space-y-3">
-                <p>General: support@nexobot.ai</p>
+                <p>General: support@nexabot.ai</p>
                 <p>Business/partnerships: business@nexobot.ai</p>
                 <p>Press: press@nexobot.ai</p>
                 <Button variant="outline" className="mt-2" onClick={() => navigate('/contact')}>Open Contact Form</Button>
