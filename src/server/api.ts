@@ -394,6 +394,19 @@ export function serverApiPlugin(): Plugin {
           return endJson(200, { ok: true, uptime: process.uptime(), timestamp: new Date().toISOString() });
         }
 
+        // Sentry test endpoint: capture a message
+        if (req.url === '/api/sentry-test' && req.method === 'GET') {
+          try { if ((Sentry as any)?.captureMessage) (Sentry as any).captureMessage('Sentry test message from /api/sentry-test'); } catch (e) {}
+          return endJson(200, { ok: true, message: 'Sentry test message sent' });
+        }
+
+        // Trigger error endpoint: sends an error to Sentry and returns 500
+        if (req.url === '/api/trigger-error' && req.method === 'GET') {
+          const err = new Error('Test error triggered from /api/trigger-error');
+          try { if ((Sentry as any)?.captureException) (Sentry as any).captureException(err); } catch (e) {}
+          return endJson(500, { ok: false, error: 'Test error triggered' });
+        }
+
         try {
           if (req.url === '/api/train' && req.method === 'POST') {
             const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
