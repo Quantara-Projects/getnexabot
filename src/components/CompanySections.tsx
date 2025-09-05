@@ -56,7 +56,7 @@ const CompanySections = () => {
                     <ul className="list-disc pl-5 space-y-1">
                       <li>How AI Is Transforming Remote Work in 2025</li>
                       <li>5 Ways to Supercharge Your Customer Support with AI</li>
-                      <li>Step-by-Step: Training Your NexoBot on Company Documents</li>
+                      <li>Step-by-Step: Training Your NexaBot on Company Documents</li>
                     </ul>
                   </div>
                 </div>
