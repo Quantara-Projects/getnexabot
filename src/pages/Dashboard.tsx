@@ -223,8 +223,9 @@ const Dashboard = () => {
     }
 
     // Run AI analysis first (stores local memory) — required before training
+    let analysis: string | null = null;
     try {
-      const analysis = await analyzeSite();
+      analysis = await analyzeSite();
       if (!analysis) {
         toast({ title: 'AI analysis warning', description: 'AI analysis could not be completed. Training will proceed without the local memory.', variant: 'destructive' });
       }
