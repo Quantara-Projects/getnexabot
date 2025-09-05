@@ -20,7 +20,7 @@ const IntegrationsSection = () => {
               <CardContent className="space-y-3 text-muted-foreground">
                 <div className="flex items-start space-x-3"><Globe className="w-5 h-5 text-primary mt-0.5" /><p>Website Chat Widget – Add a smart AI assistant to your website in minutes.</p></div>
                 <div className="flex items-start space-x-3"><Slack className="w-5 h-5 text-primary mt-0.5" /><p>Slack & Discord – Bring AI into team communication.</p></div>
-                <div className="flex items-start space-x-3"><FileText className="w-5 h-5 text-primary mt-0.5" /><p>Google Docs & Notion – Use NexoBot as your editor and idea generator.</p></div>
+                <div className="flex items-start space-x-3"><FileText className="w-5 h-5 text-primary mt-0.5" /><p>Google Docs & Notion – Use NexaBot as your editor and idea generator.</p></div>
                 <div className="flex items-start space-x-3"><Github className="w-5 h-5 text-primary mt-0.5" /><p>GitHub & GitLab – Get coding help and explanations inside your repos.</p></div>
               </CardContent>
             </Card>
