@@ -339,8 +339,12 @@ const Dashboard = () => {
         botId = `bot_${btoa(host).replace(/=+$/,'')}`;
       }
 
-      const origin = window.location.origin.replace(/:\d+$/, '') || window.location.origin;
-      const embed = `<!-- NexaBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
+      // Single-line embed code with customization attributes (local-only for each user)
+      const attrs: string[] = [];
+      if (widgetToken) attrs.push(`data-widget-token="${widgetToken}"`);
+      if (state.customization.botName) attrs.push(`data-bot-name="${encodeURIComponent(state.customization.botName)}"`);
+      if (state.customization.buttonColor) attrs.push(`data-button-color="${encodeURIComponent(state.customization.buttonColor)}"`);
+      const embed = `<script src="${window.location.origin}/install.js" data-bot-id="${botId}" ${attrs.join(' ')} async></script>`;
       setState((s) => ({ ...s, botId, embedCode: embed }));
       toast({ title: 'Website chat connected', description: 'Embed code generated.' });
     } catch {
