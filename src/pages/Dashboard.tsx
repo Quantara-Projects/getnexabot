@@ -110,7 +110,7 @@ const Dashboard = () => {
     embedCode: null,
   });
 
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [businessName, setBusinessName] = useState<string>('Your Company');
 
   useEffect(() => {
@@ -512,6 +512,19 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({ title: 'Signed out', description: 'You have been logged out.' });
+    } catch (e) {
+      toast({ title: 'Sign out failed', description: 'Please try again.', variant: 'destructive' });
+    } finally {
+      try { localStorage.removeItem('wizard_state'); } catch {}
+      try { localStorage.removeItem('app_settings'); } catch {}
+      window.location.href = '/';
+    }
+  };
+
   const [previewOpen, setPreviewOpen] = useState(false);
   const buttonSizePx = state.customization.buttonSize === 'sm' ? 44 : state.customization.buttonSize === 'lg' ? 64 : 52;
   const previewBubbleClass =
@@ -537,6 +550,9 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Beta Access</Badge>
+              <Button size="sm" variant="ghost" onClick={handleLogout}>
+                Logout
+              </Button>
               <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
                 <SettingsIcon className="w-4 h-4 mr-2" />
                 Settings
