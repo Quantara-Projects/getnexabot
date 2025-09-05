@@ -33,7 +33,16 @@ const LoadingScreen: React.FC<Props> = ({ onVerify, selectedContent, title = 'We
 
             {/* selected content slot */}
             <div className="relative z-10 flex items-center justify-center text-white text-sm sm:text-base font-semibold">
-              {selectedContent ? selectedContent : <span className="px-3 py-2 rounded-md bg-white/10">{subtitle}</span>}
+              {selectedContent ? selectedContent : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-16 h-16 text-white" aria-hidden="true">
+                  <path d="M12 8V4H8" />
+                  <rect width="16" height="12" x="4" y="8" rx="2" />
+                  <path d="M2 14h2" />
+                  <path d="M20 14h2" />
+                  <path d="M15 13v2" />
+                  <path d="M9 13v2" />
+                </svg>
+              )}
             </div>
 
             <span className="absolute bottom-3 text-xs text-white/80 opacity-90">{subtitle}</span>
