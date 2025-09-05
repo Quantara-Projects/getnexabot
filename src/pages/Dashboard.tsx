@@ -648,12 +648,25 @@ const Dashboard = () => {
                         >
                           {state.training.inProgress ? 'Training in progress…' : 'Start Training'}
                         </Button>
+
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={analyzeSite} className="flex-1">Analyze with A.I.</Button>
+                          <Button variant="ghost" onClick={() => { try { localStorage.removeItem(memoryKey); setAiAnalysis(null); toast({ title: 'Memory cleared', description: 'Local AI memory removed.' }); } catch {} }}>Clear Memory</Button>
+                        </div>
+
                         {(state.training.inProgress || state.training.completed) && (
                           <div className="space-y-2">
                             <Progress value={state.training.progress} />
                             <p className="text-xs text-muted-foreground">
                               {state.training.inProgress ? 'Processing your data securely…' : state.training.completed ? 'Training completed' : ''}
                             </p>
+                          </div>
+                        )}
+
+                        {aiAnalysis && (
+                          <div className="mt-4 bg-background border rounded p-3 text-sm">
+                            <h4 className="font-semibold mb-2">A.I. Analysis (local)</h4>
+                            <div className="max-h-40 overflow-auto text-xs whitespace-pre-wrap">{aiAnalysis}</div>
                           </div>
                         )}
                       </div>
