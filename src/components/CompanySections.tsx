@@ -13,7 +13,7 @@ const CompanySections = () => {
         <div id="about">
           <Reveal className="text-center mb-6">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">About Us</h2>
-            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">At NexoBot, we believe AI should be accessible, secure, and powerful enough to simplify lives.</p>
+            <p className="text-xl text-muted-foreground max-w-4xl mx-auto">At NexaBot, we believe AI should be accessible, secure, and powerful enough to simplify lives.</p>
           </Reveal>
           <Reveal>
             <Card>
