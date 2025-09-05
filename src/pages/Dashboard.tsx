@@ -323,7 +323,7 @@ const Dashboard = () => {
       }
 
       const origin = window.location.origin.replace(/:\d+$/, '') || window.location.origin;
-      const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
+      const embed = `<!-- NexaBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
       setState((s) => ({ ...s, botId, embedCode: embed }));
       toast({ title: 'Website chat connected', description: 'Embed code generated.' });
     } catch {
@@ -349,7 +349,7 @@ const Dashboard = () => {
         const data = await (res as Response).json().catch(() => ({}));
         const botId = data.botId || state.botId;
         const widgetToken = data.widgetToken || null;
-        const embed = `<!-- NexoBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
+        const embed = `<!-- NexaBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
         setState((s) => ({ ...s, botId, embedCode: embed }));
         toast({ title: 'Launched', description: 'Your bot is live. Copy the embed code.' });
       } else {
