@@ -24,7 +24,7 @@ const ApiDocs = () => {
             <CardTitle>API Docs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-muted-foreground">
-            <p>For developers who want to integrate NexoBot into their systems.</p>
+            <p>For developers who want to integrate NexaBot into their systems.</p>
             <div>
               <h3 className="font-semibold mb-2">API Highlights</h3>
               <ul className="list-disc pl-5 space-y-1">
