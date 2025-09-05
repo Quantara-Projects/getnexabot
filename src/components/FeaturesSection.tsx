@@ -5,7 +5,7 @@ import { Reveal } from '@/hooks/use-in-view';
 const features = [
   { icon: MessageSquare, title: 'AI Chat Assistant', desc: 'Have natural conversations to brainstorm, write, or debug.' },
   { icon: FileText, title: 'Document Analyzer', desc: 'Upload files or paste text and receive structured insights.' },
-  { icon: GraduationCap, title: 'Custom Bot Training', desc: 'Train your NexoBot with your company’s knowledge base.' },
+  { icon: GraduationCap, title: 'Custom Bot Training', desc: 'Train your NexaBot with your company’s knowledge base.' },
   { icon: MessageSquare, title: 'Omnichannel Support', desc: 'Deploy across website, Slack, WhatsApp, and more.' },
   { icon: Shield, title: 'Security by Design', desc: 'End-to-end encryption, GDPR compliance, strict data policies.' },
   { icon: Palette, title: 'Customizable UI', desc: 'Personalize appearance, greeting, and personality.' },
