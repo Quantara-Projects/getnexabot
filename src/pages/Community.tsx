@@ -26,7 +26,7 @@ const Community = () => {
           <CardContent className="space-y-4 text-muted-foreground">
             <p>We’re building more than a product—we’re building a movement.</p>
             <div>
-              <h3 className="font-semibold mb-2">Join the NexoBot community to</h3>
+              <h3 className="font-semibold mb-2">Join the NexaBot community to</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Share ideas – Suggest features or improvements.</li>
                 <li>Learn together – Tutorials, webinars, and peer-to-peer support.</li>
