@@ -122,7 +122,8 @@ const Signup = () => {
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
             if (token) {
-              await fetch('/api/send-verify', {
+              const apiPath = getServerApiPath('/send-verify');
+              await fetch(apiPath, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ email: formData.email }),
