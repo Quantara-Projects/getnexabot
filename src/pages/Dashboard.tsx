@@ -109,7 +109,25 @@ const Dashboard = () => {
     embedCode: null,
   });
 
-  const businessName = 'Acme Corp';
+  import { useAuth } from '@/hooks/useAuth';
+
+  const { user } = useAuth();
+  const [businessName, setBusinessName] = useState<string>('Your Company');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const metaName = (user as any)?.user_metadata?.business_name;
+        if (metaName && mounted) { setBusinessName(metaName); return; }
+        if (user) {
+          const { data, error } = await supabase.from('profiles').select('business_name').eq('user_id', user.id).limit(1).single();
+          if (!error && data?.business_name && mounted) setBusinessName(data.business_name);
+        }
+      } catch (e) { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [user]);
 
   // Load from localStorage (do not restore setupStep — default to Train Bot)
   useEffect(() => {
