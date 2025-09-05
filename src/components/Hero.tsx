@@ -9,7 +9,7 @@ const Hero = () => {
   return (
     <>
       <Navigation />
-      <section id="hero" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/10 to-background overflow-hidden pt-16">
+      <section id="hero" className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/10 to-background overflow-visible pt-16">
       {/* Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-primary/20 to-violet-500/20 blur-3xl animate-float"></div>
