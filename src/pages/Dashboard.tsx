@@ -279,9 +279,42 @@ const Dashboard = () => {
     }
   };
 
-  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
   const [debugHtml, setDebugHtml] = useState<string | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
+
+  // AI analysis memory (local per user)
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const memoryKey = `nexabot_memory_${(user as any)?.id || 'anon'}`;
+
+  useEffect(() => {
+    try {
+      const mem = localStorage.getItem(memoryKey);
+      if (mem) setAiAnalysis(mem);
+    } catch {}
+  }, [memoryKey]);
+
+  // Analyze website using server-side AI and store memory locally (per user)
+  const analyzeSite = async () => {
+    const url = state.websiteUrl.trim();
+    if (!url || !isValidHttpUrl(url)) { toast({ title: 'Invalid URL', description: 'Enter a valid website URL to analyze.', variant: 'destructive' }); return; }
+    try {
+      toast({ title: 'Analyzing', description: 'AI is analyzing your website content...' });
+      const res = await fetch('/api/analyze-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        toast({ title: 'Analysis failed', description: data?.message || 'Unable to analyze site.' , variant: 'destructive'});
+        return;
+      }
+      // store analysis string locally as memory
+      const analysisStr = typeof data.analysis === 'string' ? data.analysis : JSON.stringify(data.analysis);
+      try { localStorage.setItem(memoryKey, analysisStr); setAiAnalysis(analysisStr); } catch {}
+      toast({ title: 'Analysis saved', description: 'AI analysis stored locally for your account.' });
+    } catch (e) {
+      toast({ title: 'Analysis error', description: 'Failed to analyze site.', variant: 'destructive' });
+    }
+  };
+
+  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
 
   const verifyDomain = async (domain: string, token: string, tokenId?: string) => {
     try {
