@@ -710,7 +710,7 @@ export function serverApiPlugin(): Plugin {
             return res.end(`<!doctype html><meta http-equiv="refresh" content="2;url=/"><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#111827;display:grid;place-items:center;height:100vh}</style><div><h1>✅ Email verified</h1><p>You can close this tab.</p></div>`);
           }
 
-          // Delete account (server-side): removes DB rows and Supabase auth user using service role key
+          // Delete account (server-side): removes storage objects, DB rows and Supabase auth user using service role key
           if (req.url === '/api/delete-account' && req.method === 'POST') {
             const body = await parseJson(req).catch(() => ({}));
             const userId = String(body?.userId || '').trim();
@@ -726,6 +726,36 @@ export function serverApiPlugin(): Plugin {
               return endJson(401, { error: 'Unauthorized' });
             }
 
+            // Gather training document sources before deleting DB rows so we can remove related storage objects
+            let storageSources: string[] = [];
+            try {
+              const r = await supabaseAdminFetch(`/rest/v1/training_documents?user_id=eq.${encodeURIComponent(userId)}&select=source`, { method: 'GET' }, req).catch(() => null);
+              if (r && (r as any).ok) {
+                const arr = await (r as Response).json().catch(() => []);
+                if (Array.isArray(arr)) {
+                  storageSources = arr.map((x: any) => String(x?.source || '')).filter(Boolean);
+                }
+              }
+            } catch (e) {
+              // ignore errors here
+            }
+
+            // Attempt to delete storage objects referenced by training_documents (bucket: 'training')
+            let deletedStorage = 0;
+            try {
+              for (const src of storageSources) {
+                if (!src) continue;
+                // Skip absolute URLs
+                if (/^https?:\/\//i.test(src)) continue;
+                try {
+                  const del = await supabaseAdminFetch(`/storage/v1/object/training/${encodeURIComponent(src)}`, { method: 'DELETE' }, req).catch(() => null);
+                  if (del && (del as any).ok) deletedStorage++;
+                } catch (e) {
+                  // ignore individual delete failures
+                }
+              }
+            } catch (e) {}
+
             // Best-effort: delete user-related rows using service role key
             const tables = ['training_documents','chatbot_configs','domain_verifications','email_verifications','security_logs','user_settings','profiles'];
             for (const t of tables) {
@@ -738,11 +768,11 @@ export function serverApiPlugin(): Plugin {
             try {
               const adminRes = await supabaseAdminFetch(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }, req).catch(() => null);
               if (!adminRes || !(adminRes as any).ok) {
-                return endJson(200, { ok: true, deletedAuth: false, message: 'User data removed; failed to delete auth record.' });
+                return endJson(200, { ok: true, deletedAuth: false, deletedStorage, message: 'User data removed; failed to delete auth record.' });
               }
-              return endJson(200, { ok: true, deletedAuth: true });
+              return endJson(200, { ok: true, deletedAuth: true, deletedStorage });
             } catch (e) {
-              return endJson(200, { ok: true, deletedAuth: false, message: 'User data removed; failed to delete auth record.' });
+              return endJson(200, { ok: true, deletedAuth: false, deletedStorage, message: 'User data removed; failed to delete auth record.' });
             }
           }
 
