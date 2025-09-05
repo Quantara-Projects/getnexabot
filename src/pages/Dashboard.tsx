@@ -266,7 +266,7 @@ const Dashboard = () => {
       const res = await fetch('/api/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths }),
+        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths, memory: analysis || aiAnalysis || null }),
         signal: controller.signal,
       }).catch((err) => ({ ok: false, status: 0, error: err } as any));
       clearTimeout(timeout);
