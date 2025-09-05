@@ -10,8 +10,16 @@
     var open=false, ui=null;
     function fetchConfig(cb){
       try{
-        var url = (location.protocol+'//'+location.host) + '/api/widget-config?botId='+encodeURIComponent(botId)+'&token='+encodeURIComponent(token);
-        fetch(url).then(function(r){ if(!r.ok){cb(null);return;} r.json().then(function(j){cb(j);}).catch(function(){cb(null);}); }).catch(function(){cb(null);});
+        var hostBase = (location.protocol+'//'+location.host);
+        var fnUrl = hostBase + '/.netlify/functions/widget-config?botId='+encodeURIComponent(botId)+'&token='+encodeURIComponent(token);
+        var apiUrl = hostBase + '/api/widget-config?botId='+encodeURIComponent(botId)+'&token='+encodeURIComponent(token);
+        // Try functions endpoint first, fallback to /api
+        fetch(fnUrl).then(function(r){ if(!r.ok){
+          fetch(apiUrl).then(function(r2){ if(!r2.ok){cb(null);return;} r2.json().then(function(j){cb(j);}).catch(function(){cb(null);}); }).catch(function(){cb(null);});
+          return;
+        } r.json().then(function(j){cb(j);}).catch(function(){cb(null);}); }).catch(function(){
+          fetch(apiUrl).then(function(r2){ if(!r2.ok){cb(null);return;} r2.json().then(function(j){cb(j);}).catch(function(){cb(null);}); }).catch(function(){cb(null);});
+        });
       }catch(e){cb(null);}    }
     btn.addEventListener('click',function(){
       if(open){ if(ui){document.body.removeChild(ui); ui=null;} open=false; return; }
