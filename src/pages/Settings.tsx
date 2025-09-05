@@ -15,8 +15,8 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     // Account Settings
     name: 'John Doe',
-    email: 'john@acme.com',
-    businessName: 'Acme Corp',
+    email: 'john@quantara.com',
+    businessName: 'Quantara Corp',
     password: '',
     
     // Website Customization
