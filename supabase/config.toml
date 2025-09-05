@@ -1,1 +1,4 @@
-project_id = "fzygxynereijjfbcvwoh"
+# supabase config sanitized to avoid committing secrets
+# Set the project ID in your deployment environment (Netlify env vars).
+# Do NOT commit secrets to the repository.
+project_id = "REDACTED_PROJECT_ID"
