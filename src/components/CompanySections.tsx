@@ -19,7 +19,7 @@ const CompanySections = () => {
             <Card>
               <CardContent className="space-y-4 pt-6 text-muted-foreground">
                 <p>Our journey began with a simple idea: what if every individual and business could have an intelligent assistant that understands their needs, adapts to their workflows, and integrates seamlessly into their daily tools?</p>
-                <p>Founded in 2025, we set out to build an AI platform that combines cutting-edge natural language processing with enterprise-grade security. Today, NexoBot is trusted by students, freelancers, and companies to handle everyday tasks—from analyzing documents to automating customer support.</p>
+                <p>Founded in 2025, we set out to build an AI platform that combines cutting-edge natural language processing with enterprise-grade security. Today, NexaBot is trusted by students, freelancers, and companies to handle everyday tasks—from analyzing documents to automating customer support.</p>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-start space-x-3"><Rocket className="w-5 h-5 text-primary mt-0.5" /><p><b>Innovation First</b> – pushing the boundaries of what AI can achieve.</p></div>
                   <div className="flex items-start space-x-3"><Shield className="w-5 h-5 text-primary mt-0.5" /><p><b>Security Always</b> – protecting user data through encryption and strict compliance.</p></div>
