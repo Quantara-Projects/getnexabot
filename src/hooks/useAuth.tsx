@@ -29,8 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await supabase.from('profiles').insert({
           user_id: u.id,
           full_name: u.user_metadata?.full_name || null,
-          business_name: null,
-          website_url: null,
+          business_name: u.user_metadata?.business_name || null,
+          website_url: u.user_metadata?.website_url || null,
         });
       }
       const { data: settings } = await supabase
