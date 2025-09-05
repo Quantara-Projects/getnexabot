@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import Sentry from '@sentry/node';
+import * as Sentry from '@sentry/node';
 
 // Initialize Sentry if DSN provided
 try {
