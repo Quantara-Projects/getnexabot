@@ -86,6 +86,8 @@ const Settings = () => {
     root.style.setProperty('--secondary', hexToHsl(secondaryHex));
   };
 
+  const { toast } = useToast();
+
   const handleSave = async () => {
     try {
       localStorage.setItem('app_settings', JSON.stringify(settings));
@@ -106,7 +108,12 @@ const Settings = () => {
           website_url: settings.websiteUrl,
         }, { onConflict: 'user_id' } as any);
       }
-    } catch {}
+
+      toast({ title: 'Saved', description: 'Settings saved successfully.' });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: 'Error', description: 'Failed to save settings.', variant: 'destructive' });
+    }
   };
 
   return (
