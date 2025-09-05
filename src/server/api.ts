@@ -64,6 +64,18 @@ async function supabaseFetch(path: string, options: any, req: any) {
   return fetch(`${base}${path}`, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
 }
 
+// Supabase admin fetch using service role key (server-side only)
+async function supabaseAdminFetch(path: string, options: any = {}, req: any) {
+  const base = requireEnv('SUPABASE_URL');
+  const serviceKey = requireEnv('SUPABASE_SERVICE_KEY');
+  const headers: Record<string, string> = {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    'Content-Type': 'application/json',
+  };
+  return fetch(`${base}${path}`, { ...options, headers: { ...headers, ...(options?.headers || {}) } });
+}
+
 function makeBotId(seed: string) {
   return 'bot_' + crypto.createHash('sha256').update(seed).digest('base64url').slice(0, 22);
 }
@@ -696,6 +708,42 @@ export function serverApiPlugin(): Plugin {
             res.statusCode = 200;
             res.setHeader('Content-Type', 'text/html');
             return res.end(`<!doctype html><meta http-equiv="refresh" content="2;url=/"><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6f8fb;color:#111827;display:grid;place-items:center;height:100vh}</style><div><h1>✅ Email verified</h1><p>You can close this tab.</p></div>`);
+          }
+
+          // Delete account (server-side): removes DB rows and Supabase auth user using service role key
+          if (req.url === '/api/delete-account' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const userId = String(body?.userId || '').trim();
+            if (!userId) return endJson(400, { error: 'Missing userId' });
+
+            // Verify requester is the same user (must provide Authorization header with user token)
+            try {
+              const ures = await supabaseFetch('/auth/v1/user', { method: 'GET' }, req).catch(() => null);
+              if (!ures || !(ures as any).ok) return endJson(401, { error: 'Unauthorized' });
+              const caller = await (ures as Response).json().catch(() => null);
+              if (!caller || caller.id !== userId) return endJson(403, { error: 'Forbidden' });
+            } catch (e) {
+              return endJson(401, { error: 'Unauthorized' });
+            }
+
+            // Best-effort: delete user-related rows using service role key
+            const tables = ['training_documents','chatbot_configs','domain_verifications','email_verifications','security_logs','user_settings','profiles'];
+            for (const t of tables) {
+              try {
+                await supabaseAdminFetch(`/rest/v1/${t}?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' }, req).catch(() => null);
+              } catch (e) {}
+            }
+
+            // Delete auth user via Supabase admin API
+            try {
+              const adminRes = await supabaseAdminFetch(`/auth/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' }, req).catch(() => null);
+              if (!adminRes || !(adminRes as any).ok) {
+                return endJson(200, { ok: true, deletedAuth: false, message: 'User data removed; failed to delete auth record.' });
+              }
+              return endJson(200, { ok: true, deletedAuth: true });
+            } catch (e) {
+              return endJson(200, { ok: true, deletedAuth: false, message: 'User data removed; failed to delete auth record.' });
+            }
           }
 
           return endJson(404, { error: 'Not Found' });
