@@ -1,6 +1,17 @@
 import type { Plugin } from 'vite';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import Sentry from '@sentry/node';
+
+// Initialize Sentry if DSN provided
+try {
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({ dsn: process.env.SENTRY_DSN, tracesSampleRate: 0.05, environment: process.env.NODE_ENV });
+  }
+} catch (e) {
+  // ignore Sentry init errors in dev
+  console.warn('Sentry init failed', e);
+}
 
 // Small JSON body parser with size limit
 async function parseJson(req: any, limit = 1024 * 100) {
