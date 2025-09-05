@@ -552,7 +552,33 @@ const Settings = () => {
                         Permanently delete your account and all associated data
                       </p>
                     </div>
-                    <Button variant="destructive" className="">
+                    <Button variant="destructive" className="" onClick={async () => {
+                      if (!confirm('Are you sure you want to delete your account and ALL data? This cannot be undone.')) return;
+                      try {
+                        const { data: userRes } = await supabase.auth.getUser();
+                        const user = userRes?.user;
+                        if (!user) { toast({ title: 'Not signed in', description: 'Please sign in and try again.', variant: 'destructive' }); return; }
+
+                        // Best-effort: delete user-related rows
+                        await Promise.all([
+                          supabase.from('training_documents').delete().match({ user_id: user.id }),
+                          supabase.from('chatbot_configs').delete().match({ user_id: user.id }),
+                          supabase.from('domain_verifications').delete().match({ user_id: user.id }),
+                          supabase.from('email_verifications').delete().match({ user_id: user.id }),
+                          supabase.from('security_logs').delete().match({ user_id: user.id }),
+                          supabase.from('user_settings').delete().match({ user_id: user.id }),
+                          supabase.from('profiles').delete().match({ user_id: user.id }),
+                        ].map(p => p.catch(() => null)));
+
+                        // Sign out locally
+                        await supabase.auth.signOut();
+                        toast({ title: 'Account deleted', description: 'Local account data removed. Contact support to fully remove authentication records.' });
+                        navigate('/');
+                      } catch (e: any) {
+                        console.error(e);
+                        toast({ title: 'Error', description: 'Failed to delete account', variant: 'destructive' });
+                      }
+                    }}>
                       Delete Account
                     </Button>
                   </div>
