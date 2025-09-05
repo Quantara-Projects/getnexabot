@@ -8,7 +8,7 @@ const IntegrationsSection = () => {
       <div className="container mx-auto px-6">
         <Reveal className="text-center mb-12">
           <h2 className="text-4xl lg:text-5xl font-bold mb-4">Integrations</h2>
-          <p className="text-xl text-muted-foreground">NexoBot works where you work. Bring intelligent assistance into your daily tools.</p>
+          <p className="text-xl text-muted-foreground">NexaBot works where you work. Bring intelligent assistance into your daily tools.</p>
         </Reveal>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
