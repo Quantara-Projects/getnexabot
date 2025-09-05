@@ -26,9 +26,9 @@ const Hero = () => {
               Beta Access Now Available
             </div>
             
-            <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-[1.15] overflow-visible">
               AI Chatbots That{' '}
-              <span className="gradient-text">
+              <span className="gradient-text inline-block pb-1">
                 Reply Instantly
               </span>
               , Anytime
