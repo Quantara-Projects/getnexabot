@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import LoadingScreen from "./components/LoadingScreen";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,30 +27,65 @@ import ErrorOverlay from "./components/ErrorOverlay";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  const [verified, setVerified] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem("humanVerified") === "1";
-    } catch {
-      return false;
-    }
-  });
+const LoadingScreen = ({ onFinish }: any) => {
+  const [progressDone, setProgressDone] = useState(false);
 
   useEffect(() => {
-    try {
-      if (verified) sessionStorage.setItem("humanVerified", "1");
-    } catch {}
-  }, [verified]);
+    const timer = setTimeout(() => {
+      setProgressDone(true);
+      setTimeout(() => {
+        onFinish();
+      }, 3000); // wait 3 seconds before showing main page
+    }, 3000); // progress duration (bar fills up in 3s)
 
-  if (!verified) {
-    return (
-      <LoadingScreen
-        onVerify={() => setVerified(true)}
-        title="Loading..."
-        subtitle="Preparing your experience"
-        selectedContent={<img src="https://cdn.builder.io/api/v1/image/assets%2Ff7636dbc154444f9897eafaf4c70d8a5%2Fcbd065bb4fda4ac99cd7d9b6e002e947?format=webp&width=800" alt="selected" className="w-20 h-20 object-contain" />}
-      />
-    );
+    return () => clearTimeout(timer);
+  }, [onFinish]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: progressDone ? 0 : 1 }}
+      transition={{ duration: 1.5, ease: "easeInOut" }}
+      className="flex h-screen w-full flex-col items-center justify-center 
+                 bg-gradient-to-b from-indigo-50 to-white text-gray-900"
+    >
+      <div className="flex flex-col items-center text-center space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-wide text-gray-800">
+            Loading...
+          </h1>
+          <p className="mt-2 text-gray-500 text-sm">
+            Preparing your experience
+          </p>
+        </div>
+
+        <motion.div
+          className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <motion.div
+            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 3, ease: "easeInOut" }}
+          />
+        </motion.div>
+
+        <p className="mt-6 text-sm text-indigo-600 animate-pulse">
+          NexaBot is making the website ready for you!
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+const App = () => {
+  const [loadingDone, setLoadingDone] = useState(false);
+
+  if (!loadingDone) {
+    return <LoadingScreen onFinish={() => setLoadingDone(true)} />;
   }
 
   return (
@@ -59,26 +94,35 @@ const App = () => {
         <ErrorOverlay />
         <Toaster />
         <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/verify" element={<VerifyEmail />} />
-          <Route path="/cookies" element={<CookiePolicy />} />
-          <Route path="/gdpr" element={<GDPR />} />
-          <Route path="/help" element={<HelpCenter />} />
-          <Route path="/api" element={<ApiDocs />} />
-          <Route path="/status" element={<Status />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="main"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5, ease: "easeInOut" }}
+          >
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/verify" element={<VerifyEmail />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/gdpr" element={<GDPR />} />
+              <Route path="/help" element={<HelpCenter />} />
+              <Route path="/api" element={<ApiDocs />} />
+              <Route path="/status" element={<Status />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </TooltipProvider>
     </QueryClientProvider>
   );
