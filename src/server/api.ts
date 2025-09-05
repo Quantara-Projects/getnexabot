@@ -591,16 +591,62 @@ export function serverApiPlugin(): Plugin {
             const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'ip';
             if (!rateLimit('chat:' + ip, 60, 60_000)) return endJson(429, { error: 'Too Many Requests' });
             const body = await parseJson(req).catch(() => ({}));
-            const message = String(body?.message || '').slice(0, 2000);
+            const message = String(body?.message || '').slice(0, 3000);
+            const memory = String(body?.memory || '').slice(0, 20000);
+            const imageNote = body?.image ? 'IMAGE_PROVIDED' : null;
             if (!message) return endJson(400, { error: 'Empty message' });
 
             await supabaseFetch('/rest/v1/security_logs', {
               method: 'POST',
-              body: JSON.stringify({ action: 'CHAT', details: { len: message.length } }),
+              body: JSON.stringify({ action: 'CHAT', details: { len: message.length, hasImage: !!body?.image } }),
             }, req).catch(() => null);
 
-            const reply = "I'm still learning, but our team will get back to you soon.";
-            return endJson(200, { reply });
+            // If no OPENAI key, fallback
+            const openaiKey = process.env.OPENAI_API_KEY;
+            if (!openaiKey) return endJson(200, { reply: "AI not configured on server." });
+
+            // Build prompt: restrict to website troubleshooting and use provided local memory
+            const systemPrompt = `You are a technical assistant specialized in analyzing websites and diagnosing issues, bugs, and configuration problems. ONLY answer questions related to the website, its content, code, deployment, or configuration. If the user's question is not about the website or its issues, respond exactly: \":Sorry I can't answer that question since i am design to answer your questions about the issue/bugs or reports on the website.\"`;
+            const userPrompt = `Memory:\n${memory}\n\nUser question:\n${message}\n\nIf an image was provided, note that: ${imageNote || 'none'}\n\nProvide a concise, actionable diagnostic and suggested fixes. If you need to ask for more details, ask clearly. Limit the answer to 800 words.`;
+
+            try {
+              const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }], max_tokens: 800 }),
+              });
+              if (!resp.ok) return endJson(200, { reply: "AI request failed" });
+              const j = await resp.json();
+              const reply = j?.choices?.[0]?.message?.content || "";
+              return endJson(200, { reply });
+            } catch (e) {
+              return endJson(500, { error: 'AI error' });
+            }
+          }
+
+          // Analyze URL content with OpenAI
+          if (req.url === '/api/analyze-url' && req.method === 'POST') {
+            const body = await parseJson(req).catch(() => ({}));
+            const url = String(body?.url || '').trim();
+            if (!url) return endJson(400, { error: 'Missing url' });
+            const text = await tryFetchUrlText(url).catch(() => '');
+            if (!text) return endJson(400, { error: 'Could not fetch url' });
+            const openaiKey = process.env.OPENAI_API_KEY;
+            if (!openaiKey) return endJson(200, { ok: false, message: 'AI not configured' });
+            const prompt = `You are an AI that analyzes a website given its extracted text. Provide: 1) a short purpose summary, 2) main features and functionality, 3) potential issues or improvements, 4) a breakdown of the content structure (headings, top paragraphs), and 5) extract any meta tags or contact info found. Respond in JSON with keys: summary, features, issues, structure, meta.`;
+            try {
+              const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: [{ role: 'system', content: 'You are a helpful analyzer.' }, { role: 'user', content: prompt + '\n\nContent:\n' + text }], max_tokens: 1000 }),
+              });
+              if (!resp.ok) return endJson(200, { ok: false, message: 'AI request failed' });
+              const j = await resp.json();
+              const analysis = j?.choices?.[0]?.message?.content || '';
+              return endJson(200, { ok: true, analysis, raw: text });
+            } catch (e) {
+              return endJson(500, { error: 'AI analyze error' });
+            }
           }
 
           // Custom email verification: send email
