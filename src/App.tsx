@@ -52,7 +52,7 @@ const LoadingScreen = ({ onFinish }: any) => {
       <div className="flex flex-col items-center text-center space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-wide text-gray-800">
-            Loading...
+            NexaBot
           </h1>
           <p className="mt-2 text-gray-500 text-sm">
             Preparing your experience
