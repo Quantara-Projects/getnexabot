@@ -1,15 +1,19 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Resolve dist relative to the current working directory to match Render's build location
+const distDir = path.resolve(process.cwd(), 'dist');
 
-// Serve static assets from the Vite build (dist)
-app.use(express.static(path.join(__dirname, 'dist'), { maxAge: '1d' }));
+// Serve static assets if available
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir, { maxAge: '1d' }));
+} else {
+  console.warn('[server] dist directory not found at', distDir);
+}
 
 // Basic health check
 app.get('/health', (req, res) => {
@@ -18,14 +22,16 @@ app.get('/health', (req, res) => {
 
 // Fallback to index.html for client-side routing
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
-    if (err) {
-      console.error('Error sending index.html', err);
-      res.status(500).send('Server error');
-    }
-  });
+  const indexPath = path.join(distDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  // Helpful error when build is missing
+  console.error('[server] index.html not found:', indexPath);
+  res.status(500).send('Build not found. Run "npm run build" to generate the dist/ directory.');
 });
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  console.log(`[server] serving from ${distDir}`);
 });
