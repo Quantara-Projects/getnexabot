@@ -41,15 +41,33 @@ app.get('/api/env', (req, res) => {
 // Debug: attempt a simple Supabase REST call to verify headers and connectivity
 app.get('/api/test-supabase', async (req, res) => {
   const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const ANON_KEY = process.env.SUPABASE_ANON_KEY;
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
   if (!SUPABASE_URL) return res.status(400).json({ ok: false, error: 'SUPABASE_URL missing on server' });
+
+  const base = SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL;
+  const doFetch = async (key, withAuth) => {
+    const headers = { apikey: key || '', 'Content-Type': 'application/json' };
+    if (withAuth && key) headers['Authorization'] = `Bearer ${key}`;
+    return fetch(base + '/rest/v1/', { method: 'GET', headers });
+  };
+
   try {
-    const fetchRes = await fetch((SUPABASE_URL.endsWith('/') ? SUPABASE_URL.slice(0, -1) : SUPABASE_URL) + '/rest/v1/', {
-      method: 'GET',
-      headers: { apikey: SUPABASE_ANON_KEY || '', 'Content-Type': 'application/json' },
-    });
-    const text = await fetchRes.text().catch(() => '');
-    return res.json({ ok: true, status: fetchRes.status, statusText: fetchRes.statusText, snippet: text.slice(0, 200) });
+    // First try anon key
+    const anonRes = await doFetch(ANON_KEY, false);
+    const anonText = await anonRes.text().catch(() => '');
+    if (anonRes.status !== 401) {
+      return res.json({ ok: true, tried: 'anon', status: anonRes.status, statusText: anonRes.statusText, snippet: anonText.slice(0, 200) });
+    }
+
+    // If anon is forbidden and service key is available, retry with service role key (server-side only)
+    if (SERVICE_KEY) {
+      const svcRes = await doFetch(SERVICE_KEY, true);
+      const svcText = await svcRes.text().catch(() => '');
+      return res.json({ ok: true, tried: 'service', status: svcRes.status, statusText: svcRes.statusText, snippet: svcText.slice(0, 200) });
+    }
+
+    return res.status(401).json({ ok: false, error: 'Anon key unauthorized and no service key available' });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
   }
