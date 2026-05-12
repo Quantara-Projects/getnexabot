@@ -10,3 +10,5 @@
 
 [build.environment]
   NODE_ENV = "production"
+  # Ensure npm installs devDependencies during Netlify builds so Vite and build plugins are available
+  NPM_CONFIG_PRODUCTION = "false"
