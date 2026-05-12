@@ -1,46 +1,20 @@
-import { ArrowLeft, Shield } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import PageShell from "@/components/PageShell";
+import { Card, CardContent } from "@/components/ui/card";
 
-const GDPR = () => {
-  const navigate = useNavigate();
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Home
-          </Button>
-          <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-primary to-violet-600 p-2 rounded-lg"><Shield className="w-5 h-5 text-white" /></div>
-            <h1 className="text-lg font-bold">GDPR Compliance</h1>
-          </div>
-        </div>
-      </header>
-      <div className="container mx-auto px-6 py-10">
-        <Card>
-          <CardHeader>
-            <CardTitle>GDPR Compliance</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-muted-foreground">
-            <p>We comply fully with the General Data Protection Regulation (GDPR).</p>
-            <div>
-              <h3 className="font-semibold mb-2">Your Rights</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Right to Access – Request a copy of your data.</li>
-                <li>Right to Rectification – Correct inaccurate or incomplete data.</li>
-                <li>Right to Erasure – Delete your data permanently.</li>
-                <li>Right to Data Portability – Export your data in a usable format.</li>
-                <li>Right to Object/Restrict – Limit how your data is processed.</li>
-              </ul>
-            </div>
-            <p>To make a request, email privacy@nexabot.ai. All GDPR inquiries are handled within 30 days.</p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-};
+const GDPR = () => (
+  <PageShell
+    eyebrow="Legal"
+    title="GDPR"
+    description="NexaBot is designed to help businesses manage customer support data responsibly."
+  >
+    <Card className="border-border/40">
+      <CardContent className="p-6 space-y-4 text-sm text-neutral-500 leading-relaxed">
+        <p>Account owners can request access, correction, export, or deletion of personal data associated with their account.</p>
+        <p>Uploaded training data is used to operate the chatbot configured by the account owner. Owners are responsible for ensuring they have permission to upload that information.</p>
+        <p>For privacy requests, contact hello@nexabot.ai with the account email and request type.</p>
+      </CardContent>
+    </Card>
+  </PageShell>
+);
 
 export default GDPR;

@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, ArrowLeft, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import CustomCaptcha from '@/components/CustomCaptcha';
+import { LogoIcon, LogoText } from '@/components/ui/logo';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,8 +14,6 @@ const Login = () => {
   const { toast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [captchaReset, setCaptchaReset] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -41,15 +39,6 @@ const Login = () => {
       return false;
     }
 
-    if (!captchaVerified) {
-      toast({
-        title: 'Error',
-        description: 'Please complete the security verification',
-        variant: 'destructive'
-      });
-      return false;
-    }
-
     return true;
   };
 
@@ -66,23 +55,19 @@ const Login = () => {
           description: error.message,
           variant: 'destructive'
         });
-        setCaptchaReset(prev => prev + 1);
-        setCaptchaVerified(false);
       } else {
         toast({ title: 'Welcome back!', description: 'Successfully logged in' });
         navigate('/dashboard');
       }
     } catch {
       toast({ title: 'Error', description: 'An unexpected error occurred', variant: 'destructive' });
-      setCaptchaReset(prev => prev + 1);
-      setCaptchaVerified(false);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
+    <div className="min-h-screen bg-background">
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
@@ -98,17 +83,15 @@ const Login = () => {
             </div>
 
             <Link to="/" className="flex items-center space-x-3">
-              <div className="bg-gradient-to-r from-primary to-violet-600 p-2 rounded-lg">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-lg sm:text-xl font-bold">NexaBot</span>
+              <LogoIcon className="w-8 h-8" />
+              <LogoText className="text-lg sm:text-xl" />
             </Link>
           </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8 sm:py-12 max-w-md">
-        <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+        <Card className="shadow-xl border-border/40 bg-white">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl sm:text-3xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-base">
@@ -159,12 +142,10 @@ const Login = () => {
                 </div>
               </div>
 
-              <CustomCaptcha onVerify={setCaptchaVerified} resetTrigger={captchaReset} />
-
               <Button
                 type="submit"
-                className="w-full h-12 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white font-semibold shadow-glow transition-smooth"
-                disabled={loading || !captchaVerified}
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold transition-smooth"
+                disabled={loading}
               >
                 {loading ? 'Processing...' : 'Sign In'}
               </Button>

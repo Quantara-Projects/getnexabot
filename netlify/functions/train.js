@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 const fetch = global.fetch || require('node-fetch');
 
+// Load local .env for development when available
+try { require('dotenv').config(); } catch (e) {}
+
 function makeBotId(seed) {
   return 'bot_' + crypto.createHash('sha256').update(seed).digest('base64url').slice(0, 22);
 }

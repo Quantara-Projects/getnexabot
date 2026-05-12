@@ -17,14 +17,14 @@ const Settings = () => {
   const [deleting, setDeleting] = useState(false);
   const [settings, setSettings] = useState({
     // Account Settings
-    name: 'John Doe',
-    email: 'john@quantara.com',
-    businessName: 'Quantara Corp',
+    name: 'Your Name',
+    email: 'you@company.com',
+    businessName: 'Your Company',
     password: '',
     
     // Website Customization
-    primaryColor: '#6366f1',
-    secondaryColor: '#8b5cf6',
+    primaryColor: '#22d3c8',
+    secondaryColor: '#38bdf8',
     chatBubbleStyle: 'rounded',
     fontSize: 'medium',
     
@@ -119,7 +119,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 py-4">
@@ -134,7 +134,7 @@ const Settings = () => {
                 Back to Dashboard
               </Button>
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-primary to-violet-600 p-2 rounded-lg">
+                <div className="bg-primary p-2 rounded-lg">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-lg sm:text-xl font-bold">Settings</h1>
@@ -142,7 +142,7 @@ const Settings = () => {
             </div>
             <Button 
               onClick={handleSave}
-              className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-white"
             >
               <Save className="w-4 h-4 mr-2" />
               Save Changes
@@ -519,7 +519,7 @@ const Settings = () => {
                   </div>
 
                   <div className="mt-6 pt-6 border-t">
-                    <Button variant="default" className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white">
+                    <Button variant="default" className="w-full bg-primary hover:bg-primary/90 text-white">
                       <Upload className="w-4 h-4 mr-2" />
                       Upload New Training Data
                     </Button>

@@ -1,6 +1,9 @@
 const crypto = require('crypto');
 const fetch = global.fetch || require('node-fetch');
 
+// Load local .env for development when available
+try { require('dotenv').config(); } catch (e) {}
+
 function verifyWidgetToken(token) {
   try {
     const widgetSecret = process.env.WIDGET_TOKEN_SECRET || 'local-widget-secret';

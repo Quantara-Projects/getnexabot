@@ -42,7 +42,7 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12 max-w-lg">
         <Card>
           <CardHeader>
@@ -57,7 +57,7 @@ const VerifyEmail = () => {
                 <Input value={email} onChange={(e)=>setEmail(e.target.value)} className="pl-10"/>
               </div>
             </div>
-            <Button onClick={resend} disabled={sending || !email} className="w-full">{sending? 'Sending…':'Resend verification email'}</Button>
+            <Button onClick={resend} disabled={sending || !email} className="w-full bg-primary hover:bg-primary/90 text-white">{sending ? 'Sending...' : 'Resend verification email'}</Button>
             <Button variant="link" onClick={()=>navigate('/dashboard')} className="w-full">Back to Dashboard</Button>
           </CardContent>
         </Card>

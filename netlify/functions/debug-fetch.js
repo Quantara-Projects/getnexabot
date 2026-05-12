@@ -1,5 +1,8 @@
 const fetch = global.fetch || require('node-fetch');
 
+// Load local .env for development when available
+try { require('dotenv').config(); } catch (e) {}
+
 exports.handler = async function(event) {
   try {
     // Allow in development or when ALLOW_DEBUG=true

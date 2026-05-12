@@ -88,6 +88,14 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
           remove: async () => ({ data: null, error: new Error('Supabase storage not configured (stub)') }),
         }),
       },
+      channel: () => {
+        const noopChannel: any = {
+          on: () => noopChannel,
+          subscribe: () => ({ unsubscribe: () => {} }),
+        };
+        return noopChannel;
+      },
+      removeChannel: async () => ({ error: null }),
     };
 
     _supabase = supabaseStub;
@@ -121,6 +129,14 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
           remove: async () => ({ data: null, error: new Error('Supabase storage not configured') }),
         }),
       },
+      channel: () => {
+        const noopChannel: any = {
+          on: () => noopChannel,
+          subscribe: () => ({ unsubscribe: () => {} }),
+        };
+        return noopChannel;
+      },
+      removeChannel: async () => ({ error: null }),
     };
 
     _supabase = failingStub;

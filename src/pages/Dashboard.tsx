@@ -1,208 +1,227 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Bot,
   MessageSquare,
   Zap,
-  Settings as SettingsIcon,
+  Settings,
   Upload,
-  Link as LinkIcon,
+  Link,
   Smartphone,
   Globe,
   BarChart3,
   CheckCircle,
   Clock,
-  Image as ImageIcon,
+  Image,
   Palette,
   Copy,
   Check,
-} from 'lucide-react';
+  LayoutDashboard,
+  BotMessageSquare,
+  Activity,
+  User,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  X,
+  Sparkles,
+  FileText,
+  GraduationCap,
+  Shield,
+  Rocket,
+  CreditCard,
+  Code2,
+  Monitor,
+  KeyRound,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LogoIcon, LogoText } from "@/components/ui/logo";
 
-// Basic URL validation for http/https
-const isValidHttpUrl = (value: string) => {
-  try {
-    const u = new URL(value);
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch {
-    return false;
-  }
-};
-
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB per file
-const ACCEPTED_MIMES = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain',
-];
-
-type UploadedItem = {
+interface UploadedItem {
   id: string;
   name: string;
   size: number;
   type: string;
   file?: File;
+}
+
+interface BotRecord {
+  id?: string;
+  bot_id: string;
+  public_api_key?: string;
+  channel?: string;
+  domain?: string;
+  runtime_mode?: string;
+  status?: string;
+  settings?: any;
+  created_at?: string;
+}
+
+// Basic URL validation
+const isValidHttpUrl = (value: string) => {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
 };
 
-type Customization = {
-  botName: string;
-  greeting: string;
-  buttonColor: string;
-  chatHeaderColor: string;
-  bubbleShape: 'rounded' | 'square' | 'pill';
-  buttonSize: 'sm' | 'md' | 'lg';
-  headerTitle: string;
-  avatarDataUrl: string | null;
-  buttonIconUrl: string | null;
-  openAnimation: 'fade' | 'slide-up' | 'slide-left' | 'zoom' | 'bounce';
-};
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_MIMES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+];
 
-type WizardState = {
-  setupStep: number;
-  websiteUrl: string;
-  uploadedFiles: UploadedItem[];
-  training: {
-    inProgress: boolean;
-    progress: number;
-    completed: boolean;
-    error: string | null;
-  };
-  selectedChannel: 'website' | null;
-  botId: string | null;
-  customization: Customization;
-  embedCode: string | null;
-};
-
-const DEFAULT_CUSTOMIZATION: Customization = {
-  botName: 'NexaBot Assistant',
-  greeting: 'Hi! How can I help you today?',
-  buttonColor: '#6366f1',
-  chatHeaderColor: '#8b5cf6',
-  bubbleShape: 'rounded',
-  buttonSize: 'md',
-  headerTitle: 'Ask NexaBot',
-  avatarDataUrl: null,
-  buttonIconUrl: null,
-  openAnimation: 'fade',
-};
+type SidebarView = "overview" | "bots" | "features" | "settings" | "profile";
+type ExtendedSidebarView = SidebarView | "subscription";
+type RuntimeMode = "live" | "localhost" | "both";
+type WidgetPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
 
 const Dashboard = () => {
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [state, setState] = useState<WizardState>({
-    setupStep: 1,
-    websiteUrl: '',
-    uploadedFiles: [],
-    training: { inProgress: false, progress: 0, completed: false, error: null },
-    selectedChannel: null,
-    botId: null,
-    customization: DEFAULT_CUSTOMIZATION,
-    embedCode: null,
-  });
-
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [businessName, setBusinessName] = useState<string>('Your Company');
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarView, setSidebarView] =
+    useState<ExtendedSidebarView>("overview");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [businessName, setBusinessName] = useState("Your Company");
+
+  // Wizard state
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>("live");
+  const [companyDescription, setCompanyDescription] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedItem[]>([]);
+  const [training, setTraining] = useState({
+    inProgress: false,
+    progress: 0,
+    completed: false,
+    error: null as string | null,
+  });
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [botId, setBotId] = useState<string | null>(null);
+  const [publicApiKey, setPublicApiKey] = useState<string | null>(null);
+  const [embedCode, setEmbedCode] = useState<string | null>(null);
+  const [setupStep, setSetupStep] = useState(1);
+  const [bots, setBots] = useState<BotRecord[]>([]);
+  const [launching, setLaunching] = useState(false);
+  const [widgetTitle, setWidgetTitle] = useState("NexaBot");
+  const [widgetSubtitle, setWidgetSubtitle] = useState("AI support assistant");
+  const [widgetLogoUrl, setWidgetLogoUrl] = useState("");
+  const [widgetButtonLabel, setWidgetButtonLabel] = useState("Chat");
+  const [widgetPosition, setWidgetPosition] =
+    useState<WidgetPosition>("bottom-right");
+  const [widgetColor, setWidgetColor] = useState("#22d3c8");
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    const loadName = async () => {
       try {
         const metaName = (user as any)?.user_metadata?.business_name;
-        if (metaName && mounted) { setBusinessName(metaName); return; }
-        if (user) {
-          const { data, error } = await supabase.from('profiles').select('business_name').eq('user_id', user.id).limit(1).single();
-          if (!error && data?.business_name && mounted) setBusinessName(data.business_name);
+        if (metaName) {
+          setBusinessName(metaName);
+          return;
         }
-      } catch (e) { /* ignore */ }
-    })();
-    return () => { mounted = false; };
+        if (user) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("business_name")
+            .eq("user_id", user.id)
+            .limit(1)
+            .single();
+          if (data?.business_name) setBusinessName(data.business_name);
+        }
+      } catch {}
+    };
+    loadName();
   }, [user]);
 
-  // Load from localStorage (do not restore setupStep — default to Train Bot)
-  useEffect(() => {
+  const loadBots = async () => {
+    if (!user) return;
     try {
-      const saved = localStorage.getItem('wizard_state');
-      if (saved) {
-        const parsed = JSON.parse(saved) as WizardState;
-        const { setupStep, ...rest } = parsed || {};
-        setState((prev) => ({ ...prev, ...rest }));
-      }
+      const { data } = await supabase
+        .from("chatbot_configs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (Array.isArray(data)) setBots(data as BotRecord[]);
     } catch {}
-  }, []);
-
-  // Persist to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('wizard_state', JSON.stringify(state));
-    } catch {}
-  }, [state]);
-
-  // Also hydrate website URL from settings if present and empty
-  useEffect(() => {
-    try {
-      if (!state.websiteUrl) {
-        const settings = localStorage.getItem('app_settings');
-        if (settings) {
-          const parsed = JSON.parse(settings);
-          if (parsed.websiteUrl) {
-            setState((s) => ({ ...s, websiteUrl: parsed.websiteUrl }));
-          }
-        }
-      }
-    } catch {}
-  }, []);
-
-  const progressPercent = useMemo(() => {
-    const base = state.setupStep;
-    return Math.min(100, Math.max(0, (base / 3) * 100));
-  }, [state.setupStep]);
-
-  const canProceedFromStep1 = useMemo(() => {
-    const hasValidUrl = state.websiteUrl.trim().length > 0 && isValidHttpUrl(state.websiteUrl.trim());
-    const hasFiles = state.uploadedFiles.length > 0;
-    return (hasValidUrl || hasFiles) && state.training.completed && !state.training.inProgress && !state.training.error;
-  }, [state.websiteUrl, state.uploadedFiles, state.training]);
-
-  const canProceedFromStep2 = useMemo(() => !!state.selectedChannel, [state.selectedChannel]);
-
-  const handleNext = () => {
-    if (state.setupStep === 1 && !canProceedFromStep1) return;
-    if (state.setupStep === 2 && !canProceedFromStep2) return;
-    setState((s) => ({ ...s, setupStep: Math.min(3, s.setupStep + 1) }));
   };
 
-  const handlePrev = () => {
-    setState((s) => ({ ...s, setupStep: Math.max(1, s.setupStep - 1) }));
+  useEffect(() => {
+    loadBots();
+  }, [user]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      localStorage.removeItem("wizard_state");
+      localStorage.removeItem("app_settings");
+      navigate("/");
+    } catch {}
   };
 
-  const onPickFiles = () => fileInputRef.current?.click();
+  const sidebarItems: { icon: any; label: string; view: ExtendedSidebarView }[] = [
+    { icon: LayoutDashboard, label: "Overview", view: "overview" },
+    { icon: Bot, label: "Bots", view: "bots" },
+    { icon: BotMessageSquare, label: "Features", view: "features" },
+    { icon: CreditCard, label: "Subscription", view: "subscription" },
+    { icon: Settings, label: "Settings", view: "settings" },
+    { icon: User, label: "Profile", view: "profile" },
+  ];
 
   const onFilesSelected = (files: FileList | null) => {
     if (!files) return;
     const accepted: UploadedItem[] = [];
     for (const f of Array.from(files)) {
       if (!ACCEPTED_MIMES.includes(f.type)) {
-        toast({ title: 'Unsupported file type', description: `${f.name} was rejected.`, variant: 'destructive' });
+        toast({
+          title: "Unsupported file type",
+          description: `${f.name} was rejected.`,
+          variant: "destructive",
+        });
         continue;
       }
       if (f.size > MAX_FILE_SIZE_BYTES) {
-        toast({ title: 'File too large', description: `${f.name} exceeds 10MB.`, variant: 'destructive' });
+        toast({
+          title: "File too large",
+          description: `${f.name} exceeds 10MB.`,
+          variant: "destructive",
+        });
         continue;
       }
-      accepted.push({ id: `${f.name}-${f.size}-${f.lastModified}`, name: f.name, size: f.size, type: f.type, file: f });
+      accepted.push({
+        id: `${f.name}-${f.size}-${f.lastModified}`,
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        file: f,
+      });
     }
     if (accepted.length) {
-      setState((s) => ({ ...s, uploadedFiles: [...s.uploadedFiles, ...accepted] }));
+      setUploadedFiles((prev) => [...prev, ...accepted]);
     }
   };
 
@@ -212,865 +231,1136 @@ const Dashboard = () => {
     onFilesSelected(e.dataTransfer.files);
   };
 
-  const onTrain = async () => {
-    const hasUrl = state.websiteUrl.trim().length > 0;
-    const validUrl = hasUrl && isValidHttpUrl(state.websiteUrl.trim());
-    const hasFiles = state.uploadedFiles.length > 0;
+  const getDomain = (url: string) => {
+    try {
+      return new URL(url).host.toLowerCase();
+    } catch {
+      return "";
+    }
+  };
 
-    if (!validUrl && !hasFiles) {
-      toast({ title: 'Provide training data', description: 'Enter a valid URL or upload documents.', variant: 'destructive' });
+  const createPublicApiKey = () => {
+    const random = crypto.getRandomValues(new Uint8Array(24));
+    return `nxb_${Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  };
+
+  const buildEmbedCode = (apiKey: string, id: string) => {
+    const origin = window.location.origin;
+    return `<script async src="${origin}/api/nexabot" data-bot-id="${id}" data-api-key="${apiKey}"></script>`;
+  };
+
+  const widgetSettings = useMemo(
+    () => ({
+      title: widgetTitle.trim() || "NexaBot",
+      subtitle: widgetSubtitle.trim() || "AI support assistant",
+      logoUrl: widgetLogoUrl.trim(),
+      buttonLabel: widgetButtonLabel.trim() || "Chat",
+      position: widgetPosition,
+      primaryColor: widgetColor,
+      runtimeMode,
+      companyDescription: companyDescription.trim(),
+    }),
+    [
+      widgetTitle,
+      widgetSubtitle,
+      widgetLogoUrl,
+      widgetButtonLabel,
+      widgetPosition,
+      widgetColor,
+      runtimeMode,
+      companyDescription,
+    ]
+  );
+
+  const startTraining = async () => {
+    if (!websiteUrl.trim() || !isValidHttpUrl(websiteUrl)) {
+      toast({
+        title: "Website URL required",
+        description: "Enter a valid website URL before training.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!companyDescription.trim()) {
+      toast({
+        title: "Company description required",
+        description: "Add instructions and company information for the AI.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Run AI analysis first (stores local memory) — required before training
-    let analysis: string | null = null;
-    try {
-      analysis = await analyzeSite();
-      if (!analysis) {
-        toast({ title: 'AI analysis warning', description: 'AI analysis could not be completed. Training will proceed without the local memory.', variant: 'destructive' });
-      }
-    } catch (e) {
-      // continue even if analysis fails
-      console.warn('analyzeSite error', e);
-    }
-
-    setState((s) => ({ ...s, training: { inProgress: true, progress: 0, completed: false, error: null } }));
+    setTraining({ inProgress: true, progress: 20, completed: false, error: null });
 
     try {
-      // If files are provided, upload them to Supabase storage first
-      const storagePaths: string[] = [];
-      if (hasFiles) {
-        toast({ title: 'Uploading files', description: 'Uploading your files securely...', variant: 'default' });
-        for (const f of state.uploadedFiles) {
-          try {
-            if (!f.file) continue;
-            const folder = `training/${(state.botId || 'anon')}/${Date.now()}`;
-            // sanitize filename
-            const name = encodeURIComponent(f.name.replace(/[^a-zA-Z0-9.\-_%]/g, '_'));
-            const path = `${folder}/${name}`;
-            const result = await supabase.storage.from('training').upload(path, f.file as File, { upsert: true });
-            if (result.error) {
-              console.warn('upload error', result.error);
-              toast({ title: 'Upload failed', description: `${f.name} could not be uploaded.`, variant: 'destructive' });
-              continue;
-            }
-            storagePaths.push(path);
-          } catch (err) {
-            console.warn('upload exception', err);
-          }
-        }
+      const id = makeLocalBotId(websiteUrl, user?.id || "local");
+      const apiKey = publicApiKey || createPublicApiKey();
+      setBotId(id);
+      setPublicApiKey(apiKey);
+      setEmbedCode(buildEmbedCode(apiKey, id));
+
+      if (user) {
+        await supabase.from("chatbot_configs").upsert(
+          {
+            bot_id: id,
+            user_id: user.id,
+            channel: "website",
+            domain: getDomain(websiteUrl),
+            public_api_key: apiKey,
+            runtime_mode: runtimeMode,
+            status: "draft",
+            settings: widgetSettings,
+          },
+          { onConflict: "bot_id" }
+        );
+        await supabase.from("training_documents").insert({
+          bot_id: id,
+          user_id: user.id,
+          source: "manual-description",
+          content: companyDescription.trim(),
+        });
       }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
-      const res = await fetch('/api/train', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: validUrl ? state.websiteUrl.trim() : null, files: storagePaths, memory: analysis || aiAnalysis || null }),
-        signal: controller.signal,
-      }).catch((err) => ({ ok: false, status: 0, error: err } as any));
-      clearTimeout(timeout);
-
-      // Simulate progressive UI regardless of backend latency
-      for (let p = 0; p <= 100; p += 10) {
-        await new Promise((r) => setTimeout(r, 120));
-        setState((s) => ({ ...s, training: { ...s.training, progress: p } }));
-      }
-
-      if (!res || !(res as any).ok) {
-        setState((s) => ({ ...s, training: { ...s.training, inProgress: false, completed: true, error: null } }));
-        toast({ title: 'Training queued', description: 'Backend unavailable; training will complete when the server is ready.' });
-        return;
-      }
-
-      setState((s) => ({ ...s, training: { inProgress: false, progress: 100, completed: true, error: null } }));
-      toast({ title: 'Training submitted', description: 'Your training job was submitted.' });
-    } catch (e: any) {
-      setState((s) => ({ ...s, training: { inProgress: false, progress: 0, completed: false, error: 'Training failed' } }));
-      toast({ title: 'Training failed', description: 'Please try again.', variant: 'destructive' });
-    }
-  };
-
-  const [debugHtml, setDebugHtml] = useState<string | null>(null);
-  const [debugLoading, setDebugLoading] = useState(false);
-
-  // AI analysis memory (local per user)
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const memoryKey = `nexabot_memory_${(user as any)?.id || 'anon'}`;
-
-  useEffect(() => {
-    try {
-      const mem = localStorage.getItem(memoryKey);
-      if (mem) setAiAnalysis(mem);
-    } catch {}
-  }, [memoryKey]);
-
-  // Analyze website using server-side AI and store memory locally (per user)
-  const analyzeSite = async (): Promise<string | null> => {
-    const url = state.websiteUrl.trim();
-    if (!url || !isValidHttpUrl(url)) { toast({ title: 'Invalid URL', description: 'Enter a valid website URL to analyze.', variant: 'destructive' }); return null; }
-    try {
-      toast({ title: 'Analyzing', description: 'AI is analyzing your website content...' });
-      const res = await fetch('/api/analyze-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.ok) {
-        toast({ title: 'Analysis failed', description: data?.message || 'Unable to analyze site.' , variant: 'destructive'});
-        return null;
-      }
-      // store analysis string locally as memory
-      const analysisStr = typeof data.analysis === 'string' ? data.analysis : JSON.stringify(data.analysis);
-      try { localStorage.setItem(memoryKey, analysisStr); setAiAnalysis(analysisStr); } catch {}
-      toast({ title: 'Analysis saved', description: 'AI analysis stored locally for your account.' });
-      return analysisStr;
-    } catch (e) {
-      toast({ title: 'Analysis error', description: 'Failed to analyze site.', variant: 'destructive' });
-      return null;
-    }
-  };
-
-  const [verification, setVerification] = useState<{ domain: string; token: string; tokenId?: string } | null>(null);
-
-  const verifyDomain = async (domain: string, token: string, tokenId?: string) => {
-    try {
-      const payload: any = { domain, token };
-      if (tokenId) payload.tokenId = tokenId;
-      const res = await fetch('/api/verify-domain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      setTraining({ inProgress: false, progress: 100, completed: true, error: null });
+      toast({
+        title: "Training saved",
+        description: "NexaBot will use your website and company instructions.",
       });
-      if (res.ok) {
-        toast({ title: 'Domain verified', description: 'Your domain is now verified.' });
-        setVerification(null);
-        // Retry connect automatically
-        await onConnect('website');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast({ title: 'Verification failed', description: data.error || 'Token not found. Ensure meta tag or DNS TXT present.', variant: 'destructive' });
-      }
-    } catch (e) {
-      toast({ title: 'Verification error', description: 'Unable to verify domain. Try again later.', variant: 'destructive' });
-    }
-  };
-
-  const onConnect = async (channel: 'website' | 'whatsapp' | 'messenger') => {
-    if (channel !== 'website') return;
-    setState((s) => ({ ...s, selectedChannel: 'website' }));
-
-    try {
-      const res = await fetch('/api/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel: 'website', url: state.websiteUrl.trim() || null }),
-      }).catch((err) => ({ ok: false, status: 0, error: err } as any));
-
-      let botId = state.botId;
-      let widgetToken: string | null = null;
-      if (res && (res as any).ok) {
-        const data = await (res as Response).json().catch(() => ({}));
-        if (data?.status === 'verification_required') {
-          // show verification instructions with token and tokenId
-          setVerification({ domain: new URL(state.websiteUrl).host, token: data.token, tokenId: data.tokenId });
-          toast({ title: 'Domain verification required', description: 'Add the meta tag or DNS TXT record, then click Verify.' });
-          setState((s) => ({ ...s, selectedChannel: null }));
-          return;
-        }
-        botId = data.botId || botId;
-        widgetToken = data.widgetToken || null;
-      }
-
-      if (!botId) {
-        const host = (() => {
-          try { return new URL(state.websiteUrl).host; } catch { return 'local'; }
-        })();
-        botId = `bot_${btoa(host).replace(/=+$/,'')}`;
-      }
-
-      // Single-line embed code with customization attributes (local-only for each user)
-      const attrs: string[] = [];
-      if (widgetToken) attrs.push(`data-widget-token="${widgetToken}"`);
-      if (state.customization.botName) attrs.push(`data-bot-name="${encodeURIComponent(state.customization.botName)}"`);
-      if (state.customization.buttonColor) attrs.push(`data-button-color="${encodeURIComponent(state.customization.buttonColor)}"`);
-      const embed = `<script src="${window.location.origin}/install.js" data-bot-id="${botId}" ${attrs.join(' ')} async></script>`;
-      setState((s) => ({ ...s, botId, embedCode: embed }));
-      toast({ title: 'Website chat connected', description: 'Embed code generated.' });
+      setSetupStep(2);
     } catch {
-      toast({ title: 'Connection failed', description: 'Please try again.', variant: 'destructive' });
+      setTraining({
+        inProgress: false,
+        progress: 0,
+        completed: false,
+        error: "Training failed",
+      });
+      toast({
+        title: "Training failed",
+        description: "Please check your details and try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const onLaunch = async () => {
-    if (state.selectedChannel !== 'website') return;
+  const makeLocalBotId = (url: string, owner: string) => {
+    const seed = `${url}|${owner}|${Date.now()}`;
+    let hash = 0;
+    for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    return `bot_${hash.toString(16)}_${Date.now().toString(36)}`;
+  };
+
+  const chooseWebsiteChannel = () => {
+    setSelectedChannel("Website Chat");
+    setSetupStep(3);
+  };
+
+  const saveBot = async () => {
+    if (!user || !botId || !publicApiKey || !embedCode) return;
+    setLaunching(true);
     try {
-      const payload = {
-        botId: state.botId,
-        customization: state.customization,
-        channel: 'website',
+      const domain = getDomain(websiteUrl);
+      const record = {
+        bot_id: botId,
+        user_id: user.id,
+        channel: "website",
+        domain,
+        public_api_key: publicApiKey,
+        runtime_mode: runtimeMode,
+        status: "active",
+        settings: widgetSettings,
       };
-      const res = await fetch('/api/launch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch((err) => ({ ok: false, status: 0, error: err } as any));
-
-      if (res && (res as any).ok) {
-        const data = await (res as Response).json().catch(() => ({}));
-        const botId = data.botId || state.botId;
-        const widgetToken = data.widgetToken || null;
-        const embed = `<!-- NexaBot Widget -->\n<script src="${window.location.origin}/install.js" data-bot-id="${botId}"${widgetToken? ` data-widget-token=\"${widgetToken}\"` : ''} async></script>`;
-        setState((s) => ({ ...s, botId, embedCode: embed }));
-        toast({ title: 'Launched', description: 'Your bot is live. Copy the embed code.' });
-      } else {
-        // Still provide embed if we have a botId
-        if (state.botId) {
-          toast({ title: 'Launch queued', description: 'Backend unavailable; embed code is ready.' });
-        } else {
-          toast({ title: 'Launch failed', description: 'Missing bot ID. Connect first.', variant: 'destructive' });
-          return;
-        }
-      }
-
-      setState((s) => ({ ...s, setupStep: 3 }));
+      const { error } = await supabase
+        .from("chatbot_configs")
+        .upsert(record, { onConflict: "bot_id" });
+      if (error) throw error;
+      toast({
+        title: "Bot confirmed",
+        description: "Your chatbot is now available in Bots.",
+      });
+      await loadBots();
+      setSidebarView("bots");
     } catch {
-      toast({ title: 'Launch failed', description: 'Please try again.', variant: 'destructive' });
-    }
-  };
-
-  // Saving customization locally and attempting to persist to backend
-  const [saving, setSaving] = useState(false);
-  const saveCustomization = async () => {
-    setSaving(true);
-    try {
-      // Persist to local storage
-      try {
-        const stored = localStorage.getItem('wizard_state');
-        const parsed = stored ? JSON.parse(stored) : {};
-        parsed.customization = state.customization;
-        localStorage.setItem('wizard_state', JSON.stringify(parsed));
-      } catch {}
-
-      // Try to persist to backend via the launch endpoint which upserts settings
-      const payload = {
-        botId: state.botId,
-        customization: state.customization,
-        channel: state.selectedChannel || 'website',
-      };
-
-      const res = await fetch('/api/launch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch(() => ({ ok: false } as any));
-
-      if (res && (res as any).ok) {
-        toast({ title: 'Saved', description: 'Customization saved successfully.' });
-        const data = await (res as Response).json().catch(() => ({}));
-        if (data?.botId) setState((s) => ({ ...s, botId: data.botId }));
-      } else {
-        toast({ title: 'Saved locally', description: 'Customization saved locally. Backend unavailable.', variant: 'warning' as any });
-      }
-    } catch (e) {
-      toast({ title: 'Save failed', description: 'Could not save customization. Try again.', variant: 'destructive' });
+      toast({
+        title: "Could not save bot",
+        description: "Check your Supabase tables and try again.",
+        variant: "destructive",
+      });
     } finally {
-      setSaving(false);
+      setLaunching(false);
     }
   };
 
-  async function copyToClipboard(text: string) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) {
-      // fallthrough to fallback
-    }
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e) {
-      return false;
-    }
-  }
+  const renderSidebar = () => (
+    <div
+      className={`h-full flex flex-col bg-sidebar-background border-r border-border/40 ${sidebarOpen ? "w-60" : "w-16"} transition-all duration-300`}
+    >
+      {/* Logo */}
+      <div className="flex items-center justify-between p-4 border-b border-border/30">
+        {sidebarOpen ? (
+          <div
+            className="flex items-center gap-2.5 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            <LogoIcon className="w-8 h-8" />
+            <LogoText className="text-base" />
+          </div>
+        ) : (
+          <LogoIcon
+            className="w-8 h-8 mx-auto cursor-pointer"
+            onClick={() => navigate("/")}
+          />
+        )}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="hidden lg:flex p-1.5 rounded-lg hover:bg-sidebar-accent transition-smooth"
+        >
+          {sidebarOpen ? (
+            <ChevronLeft className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </button>
+      </div>
 
-  const copyEmbed = async () => {
-    if (!state.embedCode) return;
-    const ok = await copyToClipboard(state.embedCode);
-    if (ok) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      toast({ title: 'Copied', description: 'Embed code copied to clipboard.' });
-    } else {
-      toast({ title: 'Copy failed', description: 'Unable to copy. Please copy manually.', variant: 'destructive' });
+      {/* Navigation items */}
+      <div className="flex-1 py-4 space-y-1 px-3">
+        {sidebarItems.map((item) => (
+          <button
+            key={item.view}
+            onClick={() => setSidebarView(item.view)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${
+              sidebarView === item.view
+                ? "bg-primary/10 text-primary"
+                : "text-sidebar-foreground hover:bg-sidebar-accent"
+            }`}
+          >
+            <item.icon className="w-5 h-5 flex-shrink-0" />
+            {sidebarOpen && <span>{item.label}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* User area */}
+      <div className="p-3 border-t border-border/30">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:bg-sidebar-accent hover:text-foreground transition-all"
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {sidebarOpen && <span>Sign Out</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (sidebarView) {
+      case "overview":
+        return renderOverview();
+      case "bots":
+        return renderBots();
+      case "features":
+        return renderFeatures();
+      case "subscription":
+        return renderSubscription();
+      case "settings":
+        return renderSettings();
+      case "profile":
+        return renderProfile();
+      default:
+        return renderOverview();
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({ title: 'Signed out', description: 'You have been logged out.' });
-    } catch (e) {
-      toast({ title: 'Sign out failed', description: 'Please try again.', variant: 'destructive' });
-    } finally {
-      try { localStorage.removeItem('wizard_state'); } catch {}
-      try { localStorage.removeItem('app_settings'); } catch {}
-      window.location.href = '/';
-    }
-  };
-
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const buttonSizePx = state.customization.buttonSize === 'sm' ? 44 : state.customization.buttonSize === 'lg' ? 64 : 52;
-  const previewBubbleClass =
-    state.customization.bubbleShape === 'rounded'
-      ? 'rounded-2xl'
-      : state.customization.bubbleShape === 'square'
-      ? 'rounded-none'
-      : 'rounded-full';
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/10 to-background">
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
+  const renderOverview = () => (
+    <div className="space-y-6 animate-fade-up">
+      {/* Welcome Banner */}
+      <Card className="border-primary/15 bg-gradient-to-br from-primary/5 to-cyan-400/5">
+        <CardContent className="p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-primary to-violet-600 p-2 rounded-lg">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">NexaBot</h1>
-                <p className="text-sm text-muted-foreground">Welcome back, {businessName}</p>
-              </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-foreground">
+                Welcome back, {businessName}
+              </h2>
+              <p className="text-sm text-neutral-500">
+                Your NexaBot is ready to configure. Let us get you set up in 3
+                simple steps.
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">Beta Access</Badge>
-              <Button size="sm" variant="ghost" onClick={handleLogout}>
-                Logout
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
-                <SettingsIcon className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
+            <div className="hidden md:block">
+              <div className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center shadow-sm">
+                <Bot className="w-7 h-7 text-white" />
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </CardContent>
+      </Card>
 
-      <div className="container mx-auto px-6 py-8">
-        <Card className="mb-8 bg-gradient-to-r from-primary/10 to-violet-600/10 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Setup Wizard */}
+      <Card className="border-border/40">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="w-5 h-5 text-primary" />
+              Setup Wizard
+            </CardTitle>
+            <Badge
+              variant="secondary"
+              className="bg-primary/10 text-primary border-primary/20"
+            >
+              Step {setupStep} of 3
+            </Badge>
+          </div>
+          <Progress value={(setupStep / 3) * 100} className="h-1.5" />
+        </CardHeader>
+        <CardContent>
+          <Tabs value={`step-${setupStep}`}>
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="step-1" disabled className="gap-2">
+                <Upload className="w-4 h-4" />{" "}
+                <span className="hidden sm:inline">Train Bot</span>
+              </TabsTrigger>
+              <TabsTrigger value="step-2" disabled className="gap-2">
+                <Link className="w-4 h-4" />{" "}
+                <span className="hidden sm:inline">Connect</span>
+              </TabsTrigger>
+              <TabsTrigger value="step-3" disabled className="gap-2">
+                <CheckCircle className="w-4 h-4" />{" "}
+                <span className="hidden sm:inline">Launch</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="step-1" className="space-y-4">
               <div>
-                <h2 className="text-2xl font-bold mb-2">Welcome, {businessName}! 🎉</h2>
-                <p className="text-muted-foreground">Your NexaBot is ready to be configured. Let's get you set up in 3 simple steps.</p>
+                <h3 className="font-semibold mb-1">
+                  Train Your Website Bot
+                </h3>
+                <p className="text-sm text-neutral-500">
+                  Add the website, runtime access, and business instructions the AI must follow.
+                </p>
               </div>
-              <div className="hidden md:block">
-                <div className="bg-gradient-to-r from-primary to-violet-600 p-4 rounded-2xl animate-float">
-                  <Bot className="w-12 h-12 text-white" />
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="website-url">Website URL</Label>
+                  <Input
+                    id="website-url"
+                    placeholder="https://your-website.com"
+                    className="mt-1.5"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Required for domain checks before the live widget can run.
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Where should this widget work?</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1.5">
+                    {[
+                      { value: "live", label: "Website", desc: "Live domain only" },
+                      { value: "localhost", label: "Localhost", desc: "Development only" },
+                      { value: "both", label: "Both", desc: "Live and localhost" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setRuntimeMode(option.value as RuntimeMode)}
+                        className={`text-left p-3 rounded-lg border transition-all ${
+                          runtimeMode === option.value
+                            ? "border-primary bg-primary/5 text-foreground"
+                            : "border-border/50 hover:border-primary/30"
+                        }`}
+                      >
+                        <div className="text-sm font-semibold">{option.label}</div>
+                        <div className="text-xs text-neutral-400">{option.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="company-description">Company instructions</Label>
+                  <Textarea
+                    id="company-description"
+                    value={companyDescription}
+                    onChange={(e) => setCompanyDescription(e.target.value)}
+                    placeholder="Describe your company, services, prices, policies, tone, support rules, and what the AI must not answer."
+                    className="mt-1.5 min-h-[120px]"
+                  />
+                  <p className="mt-1 text-xs text-neutral-400">
+                    Required. NexaBot follows this knowledge strictly.
+                  </p>
+                </div>
+
+                <div
+                  className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/30 transition-all cursor-pointer"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={onDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium mb-1">
+                    Upload PDFs, DOCX, or TXT (optional)
+                  </p>
+                  <p className="text-xs text-neutral-400">Max 10MB per file</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept={ACCEPTED_MIMES.join(",")}
+                    className="hidden"
+                    onChange={(e) => onFilesSelected(e.target.files)}
+                  />
+                </div>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {uploadedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between rounded-lg border border-border/40 px-3 py-2 text-sm"
+                      >
+                        <span className="truncate">{file.name}</span>
+                        <span className="text-xs text-neutral-400">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  className="flex-1 bg-primary text-white hover:bg-primary/90"
+                  onClick={startTraining}
+                  disabled={
+                    training.inProgress ||
+                    !websiteUrl.trim() ||
+                    !companyDescription.trim()
+                  }
+                >
+                  {training.inProgress ? "Saving..." : "Save and Continue"}
+                </Button>
+              </div>
+              {training.inProgress && (
+                <Progress value={training.progress} className="h-1" />
+              )}
+            </TabsContent>
+
+            <TabsContent value="step-2" className="space-y-4">
+              <h3 className="font-semibold">Connect Your Channels</h3>
+              <p className="text-sm text-neutral-500">
+                Choose where you want NexaBot to provide support.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: Globe,
+                    label: "Website Chat",
+                    desc: "Embed on your site with a script tag",
+                    badge: "Recommended",
+                    active: true,
+                  },
+                  {
+                    icon: MessageSquare,
+                    label: "WhatsApp",
+                    desc: "Business API",
+                    badge: "Coming Soon",
+                    active: false,
+                  },
+                  {
+                    icon: Smartphone,
+                    label: "Messenger",
+                    desc: "Facebook Pages",
+                    badge: "Coming Soon",
+                    active: false,
+                  },
+                ].map((channel) => (
+                  <Card
+                    key={channel.label}
+                    className={`p-4 text-center border-2 cursor-pointer transition-all ${
+                      selectedChannel === channel.label
+                        ? "border-primary bg-primary/5"
+                        : channel.active
+                          ? "border-border/40 hover:border-primary/30"
+                          : "border-border/20 opacity-50 cursor-not-allowed"
+                    }`}
+                    onClick={() => channel.active && chooseWebsiteChannel()}
+                  >
+                    <channel.icon className="w-6 h-6 text-primary mx-auto mb-2" />
+                    <h4 className="font-semibold text-sm">{channel.label}</h4>
+                    <p className="text-xs text-neutral-400">{channel.desc}</p>
+                    <Badge
+                      variant={channel.active ? "secondary" : "outline"}
+                      className="mt-2 text-[10px]"
+                    >
+                      {channel.badge}
+                    </Badge>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="border-border"
+                  onClick={() => setSetupStep(1)}
+                >
+                  Back
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="step-3" className="space-y-4">
+              <div>
+                <h3 className="font-semibold">Customize and Launch</h3>
+                <p className="text-sm text-neutral-500">
+                  Adjust the widget, copy the snippet, then confirm the bot.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="space-y-3">
+                  <div>
+                    <Label>Bot title</Label>
+                    <Input
+                      value={widgetTitle}
+                      onChange={(e) => setWidgetTitle(e.target.value)}
+                      className="mt-1.5"
+                      placeholder="NexaBot"
+                    />
+                  </div>
+                  <div>
+                    <Label>Description</Label>
+                    <Input
+                      value={widgetSubtitle}
+                      onChange={(e) => setWidgetSubtitle(e.target.value)}
+                      className="mt-1.5"
+                      placeholder="AI support assistant"
+                    />
+                  </div>
+                  <div>
+                    <Label>Logo URL</Label>
+                    <Input
+                      value={widgetLogoUrl}
+                      onChange={(e) => setWidgetLogoUrl(e.target.value)}
+                      className="mt-1.5"
+                      placeholder="https://your-site.com/logo.png"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Button text</Label>
+                      <Input
+                        value={widgetButtonLabel}
+                        onChange={(e) => setWidgetButtonLabel(e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label>Accent color</Label>
+                      <Input
+                        type="color"
+                        value={widgetColor}
+                        onChange={(e) => setWidgetColor(e.target.value)}
+                        className="mt-1.5 h-10 p-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Widget corner</Label>
+                    <Select
+                      value={widgetPosition}
+                      onValueChange={(value) =>
+                        setWidgetPosition(value as WidgetPosition)
+                      }
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Choose corner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bottom-right">Bottom right</SelectItem>
+                        <SelectItem value="bottom-left">Bottom left</SelectItem>
+                        <SelectItem value="top-right">Top right</SelectItem>
+                        <SelectItem value="top-left">Top left</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border/40 bg-secondary/20 p-4">
+                  <div className="text-sm font-semibold mb-3">Live preview</div>
+                  <div className="relative h-[360px] rounded-lg bg-white border border-border/40 overflow-hidden">
+                    <div
+                      className={`absolute w-[280px] rounded-xl border border-border/40 bg-white shadow-xl overflow-hidden ${
+                        widgetPosition.includes("top") ? "top-4" : "bottom-20"
+                      } ${widgetPosition.includes("left") ? "left-4" : "right-4"}`}
+                    >
+                      <div className="flex items-center gap-2 p-3 border-b border-border/30">
+                        {widgetLogoUrl ? (
+                          <img
+                            src={widgetLogoUrl}
+                            alt=""
+                            className="w-8 h-8 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <LogoIcon className="w-8 h-8" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold truncate">
+                            {widgetSettings.title}
+                          </div>
+                          <div className="text-xs text-neutral-400 truncate">
+                            {widgetSettings.subtitle}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-2 text-sm">
+                        <div className="inline-block max-w-[85%] rounded-xl rounded-bl-sm bg-secondary px-3 py-2">
+                          Hi. How can I help?
+                        </div>
+                        <div className="flex justify-end">
+                          <div
+                            className="inline-block max-w-[85%] rounded-xl rounded-br-sm px-3 py-2 text-white"
+                            style={{ backgroundColor: widgetColor }}
+                          >
+                            Do you offer support?
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className={`absolute h-12 px-4 rounded-xl text-sm font-semibold text-white shadow-lg ${
+                        widgetPosition.includes("top") ? "top-4" : "bottom-4"
+                      } ${widgetPosition.includes("left") ? "left-4" : "right-4"}`}
+                      style={{ backgroundColor: widgetColor }}
+                    >
+                      {widgetSettings.buttonLabel}
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              <div className="rounded-lg border border-border/40 bg-secondary/30 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold flex items-center gap-2">
+                      <Code2 className="w-4 h-4 text-primary" />
+                      Install snippet
+                    </div>
+                    <p className="text-xs text-neutral-400">
+                      Add this before the closing body tag on your website.
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    {runtimeMode}
+                  </Badge>
+                </div>
+                <pre className="overflow-x-auto rounded-lg bg-foreground text-background p-3 text-xs">
+                  {embedCode || "Complete step 1 to generate your code snippet."}
+                </pre>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    className="border-border"
+                    onClick={() => {
+                      if (!embedCode) return;
+                      navigator.clipboard.writeText(embedCode);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1400);
+                    }}
+                    disabled={!embedCode}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    {copied ? "Copied" : "Copy Code"}
+                  </Button>
+                  <Button
+                    className="flex-1 bg-primary text-white hover:bg-primary/90"
+                    onClick={saveBot}
+                    disabled={!embedCode || launching}
+                  >
+                    <Rocket className="w-4 h-4 mr-2" />
+                    {launching ? "Saving..." : "Confirm Bot"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="border-border"
+                  onClick={() => setSetupStep(2)}
+                >
+                  Back
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderBots = () => (
+    <div className="space-y-6 animate-fade-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-foreground">Bots</h2>
+          <p className="text-sm text-neutral-500">
+            Manage the chatbots you have confirmed from the setup wizard.
+          </p>
+        </div>
+        <Button
+          className="bg-primary text-white hover:bg-primary/90"
+          onClick={() => {
+            setSidebarView("overview");
+            setSetupStep(1);
+          }}
+        >
+          <Bot className="w-4 h-4 mr-2" />
+          New Bot
+        </Button>
+      </div>
+
+      {bots.length === 0 ? (
+        <Card className="border-border/40">
+          <CardContent className="p-8 text-center">
+            <LogoIcon className="w-12 h-12 mx-auto mb-3" />
+            <h3 className="font-semibold text-foreground">No bots yet</h3>
+            <p className="text-sm text-neutral-500 mt-1">
+              Finish the setup wizard and confirm your first website bot.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {bots.map((bot) => {
+            const settings = bot.settings || {};
+            const snippet = bot.public_api_key
+              ? buildEmbedCode(bot.public_api_key, bot.bot_id)
+              : "";
+            return (
+              <Card key={bot.bot_id} className="border-border/40">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {settings.logoUrl ? (
+                        <img
+                          src={settings.logoUrl}
+                          alt=""
+                          className="w-10 h-10 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <LogoIcon className="w-10 h-10 flex-shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="font-semibold truncate">
+                          {settings.title || "NexaBot"}
+                        </h3>
+                        <p className="text-xs text-neutral-400 truncate">
+                          {bot.domain || "localhost"}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                      {bot.status || "active"}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-lg bg-secondary/40 p-3">
+                      <div className="text-neutral-400 flex items-center gap-1">
+                        <Monitor className="w-3.5 h-3.5" /> Runtime
+                      </div>
+                      <div className="font-medium mt-1">
+                        {settings.runtimeMode || bot["runtime_mode"] || "live"}
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-secondary/40 p-3">
+                      <div className="text-neutral-400 flex items-center gap-1">
+                        <KeyRound className="w-3.5 h-3.5" /> Key
+                      </div>
+                      <div className="font-medium mt-1 truncate">
+                        {bot.public_api_key ? `${bot.public_api_key.slice(0, 10)}...` : "Missing"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {snippet && (
+                    <div className="space-y-2">
+                      <pre className="overflow-x-auto rounded-lg bg-foreground text-background p-3 text-xs">
+                        {snippet}
+                      </pre>
+                      <Button
+                        variant="outline"
+                        className="w-full border-border"
+                        onClick={() => navigator.clipboard.writeText(snippet)}
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Snippet
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFeatures = () => (
+    <div className="space-y-6 animate-fade-up">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-foreground">
+          Platform Features
+        </h2>
+        <p className="text-sm text-neutral-500">
+          All the tools you need to power your customer support.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          {
+            icon: MessageSquare,
+            title: "AI Chat",
+            desc: "Natural conversations with instant AI responses.",
+            color: "text-primary",
+            bg: "bg-primary/10",
+          },
+          {
+            icon: GraduationCap,
+            title: "Bot Training",
+            desc: "Train on your data for personalized responses.",
+            color: "text-emerald-600",
+            bg: "bg-emerald-500/10",
+          },
+          {
+            icon: Globe,
+            title: "Omnichannel",
+            desc: "Deploy on website, WhatsApp, Messenger, Slack.",
+            color: "text-blue-600",
+            bg: "bg-blue-500/10",
+          },
+          {
+            icon: FileText,
+            title: "Document Analysis",
+            desc: "Process PDFs, DOCX, and TXT files.",
+            color: "text-violet-600",
+            bg: "bg-violet-500/10",
+          },
+          {
+            icon: Shield,
+            title: "Security",
+            desc: "End-to-end encryption and GDPR compliance.",
+            color: "text-amber-600",
+            bg: "bg-amber-500/10",
+          },
+          {
+            icon: BarChart3,
+            title: "Analytics",
+            desc: "Track conversations, leads, and insights.",
+            color: "text-rose-600",
+            bg: "bg-rose-500/10",
+          },
+        ].map((feat, i) => (
+          <Card
+            key={i}
+            className="border-border/40 hover:border-border/70 transition-all"
+          >
+            <CardContent className="p-5">
+              <div
+                className={`w-9 h-9 rounded-xl ${feat.bg} flex items-center justify-center mb-3`}
+              >
+                <feat.icon className={`w-4.5 h-4.5 ${feat.color}`} />
+              </div>
+              <h3 className="font-semibold text-sm mb-1">{feat.title}</h3>
+              <p className="text-xs text-neutral-500">{feat.desc}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderSubscription = () => {
+    const createdAt = (user as any)?.created_at ? new Date((user as any).created_at) : null;
+    const trialEnd = createdAt ? new Date(createdAt) : null;
+    if (trialEnd) trialEnd.setMonth(trialEnd.getMonth() + 3);
+
+    const now = Date.now();
+    const msLeft = trialEnd ? trialEnd.getTime() - now : null;
+    const daysLeft = msLeft !== null ? Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24))) : null;
+
+    const included = [
+      "Unlimited conversations",
+      "Website chat widget",
+      "WhatsApp integration",
+      "Messenger integration",
+      "Slack & Discord support",
+      "Lead capture & notifications",
+      "Custom AI training",
+      "Analytics dashboard",
+      "Email support",
+    ];
+
+    return (
+      <div className="space-y-6 animate-fade-up max-w-3xl">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-foreground">Subscription</h2>
+          <p className="text-sm text-neutral-500">
+            View your current plan and remaining access.
+          </p>
+        </div>
+
+        <Card className="border-primary/15 bg-gradient-to-br from-primary/5 to-cyan-400/5">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center justify-between">
+              <span>Beta Access Plan</span>
+              <Badge className="bg-primary/10 text-primary border-primary/20">
+                Active
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-xl bg-background border border-border/40">
+                <div className="text-xs text-neutral-400">Price</div>
+                <div className="text-lg font-semibold text-foreground">Free</div>
+                <div className="text-xs text-neutral-400">during beta</div>
+              </div>
+              <div className="p-4 rounded-xl bg-background border border-border/40">
+                <div className="text-xs text-neutral-400">Trial</div>
+                <div className="text-lg font-semibold text-foreground">
+                  3 months
+                </div>
+                <div className="text-xs text-neutral-400">beta access</div>
+              </div>
+              <div className="p-4 rounded-xl bg-background border border-border/40">
+                <div className="text-xs text-neutral-400">Time Left</div>
+                <div className="text-lg font-semibold text-foreground">
+                  {daysLeft === null ? "—" : `${daysLeft} days`}
+                </div>
+                <div className="text-xs text-neutral-400">
+                  {trialEnd ? `Until ${trialEnd.toLocaleDateString()}` : "—"}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-xl bg-background border border-border/40">
+              <div className="text-sm font-semibold text-foreground mb-3">
+                Everything included
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                {included.map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-sm text-neutral-600">
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs text-neutral-400">
+                Beta users automatically get a 3-month free trial.
+              </div>
+              <Button variant="outline" className="border-border" disabled>
+                Manage Subscription
+              </Button>
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  };
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Zap className="w-5 h-5 mr-2 text-primary" />
-                  Setup Wizard
-                </CardTitle>
-                <Progress value={progressPercent} className="w-full" />
-                <p className="text-sm text-muted-foreground">Step {state.setupStep} of 3</p>
-              </CardHeader>
-              <CardContent>
-                <Tabs value={`step-${state.setupStep}`} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="step-1" disabled className="flex items-center space-x-2">
-                      <Upload className="w-4 h-4" />
-                      <span className="hidden sm:inline">Train Bot</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="step-2" disabled className="flex items-center space-x-2">
-                      <LinkIcon className="w-4 h-4" />
-                      <span className="hidden sm:inline">Connect</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="step-3" disabled className="flex items-center space-x-2">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="hidden sm:inline">Launch</span>
-                    </TabsTrigger>
-                  </TabsList>
+  const renderSettings = () => (
+    <div className="space-y-6 animate-fade-up max-w-2xl">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-foreground">Settings</h2>
+        <p className="text-sm text-neutral-500">
+          Configure your NexaBot preferences.
+        </p>
+      </div>
 
-                  {/* Step 1 */}
-                  <TabsContent value="step-1" className="space-y-4 mt-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Upload Your Business Data</h3>
-                      <p className="text-muted-foreground mb-4">Provide a website URL or upload documents. We'll extract text to train your bot.</p>
-                    </div>
+      <Card className="border-border/40">
+        <CardHeader>
+          <CardTitle className="text-base">General Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Bot Name</Label>
+            <Input placeholder="NexaBot Assistant" className="mt-1.5" />
+          </div>
+          <div>
+            <Label>Welcome Message</Label>
+            <Input
+              placeholder="Hi! How can I help you today?"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label>Default Channel</Label>
+            <div className="grid grid-cols-3 gap-2 mt-1.5">
+              {["Website", "WhatsApp", "Messenger"].map((ch) => (
+                <Button
+                  key={ch}
+                  variant="outline"
+                  className="border-border text-sm"
+                >
+                  {ch}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Button className="bg-primary text-white hover:bg-primary/90">
+            Save Settings
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="website-url">Website URL (Recommended)</Label>
-                        <Input
-                          id="website-url"
-                          placeholder="https://your-website.com"
-                          className="mt-2"
-                          value={state.websiteUrl}
-                          onChange={(e) => setState((s) => ({ ...s, websiteUrl: e.target.value }))}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">Only http/https are allowed.</p>
-                      </div>
+  const renderProfile = () => (
+    <div className="space-y-6 animate-fade-up max-w-2xl">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold text-foreground">Profile</h2>
+        <p className="text-sm text-neutral-500">Manage your account details.</p>
+      </div>
 
-                      <div className="text-center"><p className="text-sm text-muted-foreground mb-2">— OR —</p></div>
-
-                      <div
-                        className="border-2 border-dashed border-border rounded-lg p-8 text-center"
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={onDrop}
-                      >
-                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-4" />
-                        <p className="font-medium mb-2">Upload PDFs, DOCX, or TXT</p>
-                        <p className="text-sm text-muted-foreground mb-4">Max 10MB per file. Drag & drop or browse.</p>
-                        <div className="flex justify-center gap-3">
-                          <Button variant="outline" onClick={onPickFiles}>Browse Files</Button>
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            multiple
-                            accept={ACCEPTED_MIMES.join(',')}
-                            className="hidden"
-                            onChange={(e) => onFilesSelected(e.target.files)}
-                          />
-                          {state.uploadedFiles.length > 0 && (
-                            <Badge variant="secondary">{state.uploadedFiles.length} file(s) selected</Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      {state.uploadedFiles.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-semibold">Selected Files</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {state.uploadedFiles.map((f) => (
-                              <div key={f.id} className="flex items-center justify-between p-2 border rounded">
-                                <div className="flex items-center gap-2">
-                                  <Upload className="w-4 h-4 text-primary" />
-                                  <span className="text-sm">{f.name}</span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="space-y-3">
-                        <Button
-                          onClick={onTrain}
-                          disabled={state.training.inProgress}
-                          className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
-                        >
-                          {state.training.inProgress ? 'Training in progress…' : 'Start Training'}
-                        </Button>
-
-                        <div className="flex justify-end">
-                          <Button variant="ghost" onClick={() => { try { localStorage.removeItem(memoryKey); setAiAnalysis(null); toast({ title: 'Memory cleared', description: 'Local AI memory removed.' }); } catch {} }}>Clear Memory</Button>
-                        </div>
-
-                        {(state.training.inProgress || state.training.completed) && (
-                          <div className="space-y-2">
-                            <Progress value={state.training.progress} />
-                            <p className="text-xs text-muted-foreground">
-                              {state.training.inProgress ? 'Processing your data securely…' : state.training.completed ? 'Training completed' : ''}
-                            </p>
-                          </div>
-                        )}
-
-                        {aiAnalysis && (
-                          <div className="mt-4 bg-background border rounded p-3 text-sm">
-                            <h4 className="font-semibold mb-2">A.I. Analysis (local)</h4>
-                            <div className="max-h-40 overflow-auto text-xs whitespace-pre-wrap">{aiAnalysis}</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={handleNext}
-                        className="w-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90"
-                        disabled={!canProceedFromStep1}
-                      >
-                        Continue to Integrations
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  {/* Step 2 */}
-                  <TabsContent value="step-2" className="space-y-4 mt-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Connect Your Channels</h3>
-                      <p className="text-muted-foreground mb-4">Choose where you want NexaBot to provide support.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card onClick={() => onConnect('website')} className={`p-4 text-center border-2 cursor-pointer transition-smooth ${state.selectedChannel==='website' ? 'border-primary' : 'hover:border-primary'}`}>
-                        <Globe className="w-8 h-8 text-primary mx-auto mb-2" />
-                        <h4 className="font-semibold">Website Chat</h4>
-                        <p className="text-xs text-muted-foreground">Embed on your site</p>
-                        <Badge variant="secondary" className="mt-2">Recommended</Badge>
-                      </Card>
-
-                      <Card className={`p-4 text-center border-2 opacity-60 cursor-not-allowed`}>
-                        <MessageSquare className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                        <h4 className="font-semibold">WhatsApp</h4>
-                        <p className="text-xs text-muted-foreground">Business API</p>
-                        <Badge variant="outline" className="mt-2">Coming Soon</Badge>
-                      </Card>
-
-                      <Card className={`p-4 text-center border-2 opacity-60 cursor-not-allowed`}>
-                        <Smartphone className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                        <h4 className="font-semibold">Messenger</h4>
-                        <p className="text-xs text-muted-foreground">Facebook Pages</p>
-                        <Badge variant="outline" className="mt-2">Coming Soon</Badge>
-                      </Card>
-                    </div>
-
-                    {state.selectedChannel === 'website' && state.embedCode && (
-                      <div className="bg-secondary/30 rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">Embed Code</h4>
-                        <p className="text-sm text-muted-foreground mb-3">Copy this code into your website's head or before body end.</p>
-                        <div className="relative">
-                          <pre className="bg-background border rounded p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{state.embedCode}</pre>
-                          <Button size="sm" variant="outline" className="absolute top-2 right-2" onClick={copyEmbed}>
-                            {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />} {copied ? 'Copied' : 'Copy'}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">Domain verification may be required.</p>
-                      </div>
-                    )}
-
-                    {verification && (
-                      <div className="bg-yellow-50 border-yellow-200 rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">Domain Verification Required</h4>
-                        <p className="text-sm text-muted-foreground mb-2">We couldn't verify ownership of <strong>{verification.domain}</strong>. Add the meta tag below into your site's &lt;head&gt; or add as a DNS TXT record, then click Verify.</p>
-                        <pre className="bg-background border rounded p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{`<meta name="nexabot-domain-verification" content="${verification.token}" />`}</pre>
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button size="sm" variant="outline" onClick={async () => { const text = `<meta name=\"nexabot-domain-verification\" content=\"${verification.token}\" />`; const ok = await copyToClipboard(text); if (ok) toast({ title: 'Copied', description: 'Verification meta tag copied to clipboard.' }); else toast({ title: 'Copy failed', description: 'Clipboard blocked — paste manually into your site header.', variant: 'destructive' }); }}>Copy Tag</Button>
-                          <Button size="sm" onClick={() => verifyDomain(verification.domain, verification.token)}>Verify Now</Button>
-                          <Button size="sm" variant="ghost" onClick={async () => {
-                            setDebugLoading(true);
-                            setDebugHtml(null);
-                            try {
-                              const res = await fetch('/api/debug-fetch', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ url: (state.websiteUrl || '').trim() }) });
-                              const j = await res.json().catch(()=>({}));
-                              if (res.ok) setDebugHtml(j.snippet || ''); else setDebugHtml('Fetch failed: ' + (j.error || j.message || 'unknown'));
-                            } catch (e) { setDebugHtml('Error: ' + String(e)); }
-                            setDebugLoading(false);
-                          }}>{debugLoading ? 'Checking…' : 'Show Fetched HTML'}</Button>
-                          {/* Stored tokens are not exposed for security reasons */}
-                        </div>
-                        {debugHtml !== null && (
-                          <div className="mt-3 bg-background border rounded p-3 max-h-64 overflow-auto text-xs">
-                            <pre className="whitespace-pre-wrap">{debugHtml}</pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex gap-3 mt-3">
-                      <Button variant="outline" onClick={handlePrev} className="w-1/3">Back</Button>
-                      <Button onClick={handleNext} className="flex-1 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90" disabled={!canProceedFromStep2}>
-                        Configure Settings
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  {/* Step 3 */}
-                  <TabsContent value="step-3" className="space-y-4 mt-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">Customize & Launch</h3>
-                      <p className="text-muted-foreground mb-4">Personalize your bot's appearance and behavior.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="bot-name">Chatbot Name</Label>
-                          <Input id="bot-name" className="mt-2" value={state.customization.botName} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, botName: e.target.value } }))} />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="greeting">Welcome Greeting</Label>
-                          <Input id="greeting" className="mt-2" value={state.customization.greeting} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, greeting: e.target.value } }))} />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Button Color</Label>
-                            <div className="flex gap-2 mt-2">
-                              <Input type="color" value={state.customization.buttonColor} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, buttonColor: e.target.value } }))} className="w-16 h-10 p-1" />
-                              <Input value={state.customization.buttonColor} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, buttonColor: e.target.value } }))} />
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Chat Header Color</Label>
-                            <div className="flex gap-2 mt-2">
-                              <Input type="color" value={state.customization.chatHeaderColor} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, chatHeaderColor: e.target.value } }))} className="w-16 h-10 p-1" />
-                              <Input value={state.customization.chatHeaderColor} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, chatHeaderColor: e.target.value } }))} />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Bubble Shape</Label>
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            {(['rounded','square','pill'] as const).map((shape) => (
-                              <Button key={shape} variant={state.customization.bubbleShape===shape? 'default':'outline'} onClick={() => setState((s) => ({ ...s, customization: { ...s.customization, bubbleShape: shape } }))} className="capitalize">{shape}</Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Button Size</Label>
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            {(['sm','md','lg'] as const).map((sz) => (
-                              <Button key={sz} variant={state.customization.buttonSize===sz? 'default':'outline'} onClick={() => setState((s) => ({ ...s, customization: { ...s.customization, buttonSize: sz } }))} className="uppercase">{sz}</Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Header Title</Label>
-                          <Input className="mt-2" value={state.customization.headerTitle} onChange={(e) => setState((s) => ({ ...s, customization: { ...s.customization, headerTitle: e.target.value } }))} />
-                        </div>
-
-                        <div>
-                          <Label>Chat UI Size (px)</Label>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs w-12">Width</span>
-                              <Input type="number" min={260} max={640} value={state.customization.chatWidth} onChange={(e)=>setState(s=>({...s, customization:{...s.customization, chatWidth: Math.max(260, Math.min(640, Number(e.target.value)||360))}}))}/>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs w-12">Height</span>
-                              <Input type="number" min={320} max={800} value={state.customization.chatHeight} onChange={(e)=>setState(s=>({...s, customization:{...s.customization, chatHeight: Math.max(320, Math.min(800, Number(e.target.value)||420))}}))}/>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Open Animation</Label>
-                          <div className="grid grid-cols-5 gap-2 mt-2">
-                            {(['fade','slide-up','slide-left','zoom','bounce'] as const).map((opt) => (
-                              <Button key={opt} variant={state.customization.openAnimation===opt?'default':'outline'} onClick={()=>setState(s=>({...s, customization:{...s.customization, openAnimation: opt}}))} className="capitalize text-xs">{opt.replace('-',' ')}</Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Button Icon</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Button variant="outline" onClick={() => document.getElementById('button-icon-input')?.click()}>
-                              <ImageIcon className="w-4 h-4 mr-2" /> Upload Icon
-                            </Button>
-                            <input id="button-icon-input" type="file" accept="image/*" className="hidden" onChange={(e)=>{
-                              const file=e.target.files?.[0]; if(!file) return; if(file.size>1024*1024){ toast({title:'Icon too large', description:'Max 1MB.', variant:'destructive'}); return; }
-                              const reader=new FileReader(); reader.onload=()=>setState(s=>({...s, customization:{...s.customization, buttonIconUrl: reader.result as string}})); reader.readAsDataURL(file);
-                            }} />
-                            {state.customization.buttonIconUrl && (
-                              <img src={state.customization.buttonIconUrl} alt="icon" className="w-8 h-8 rounded border" />
-                            )}
-                            {!state.customization.buttonIconUrl && (
-                              <span className="text-xs text-muted-foreground">Default icon will be used</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Bot Avatar</Label>
-                          <div className="flex items-center gap-3 mt-2">
-                            <Button variant="outline" onClick={() => document.getElementById('avatar-input')?.click()}>
-                              <ImageIcon className="w-4 h-4 mr-2" /> Upload Image
-                            </Button>
-                            <input id="avatar-input" type="file" accept="image/*" className="hidden" onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              if (file.size > 2 * 1024 * 1024) {
-                                toast({ title: 'Image too large', description: 'Max 2MB.', variant: 'destructive' });
-                                return;
-                              }
-                              const reader = new FileReader();
-                              reader.onload = () => setState((s) => ({ ...s, customization: { ...s.customization, avatarDataUrl: reader.result as string } }));
-                              reader.readAsDataURL(file);
-                            }} />
-                            {state.customization.avatarDataUrl && (
-                              <img src={state.customization.avatarDataUrl} alt="avatar" className="w-10 h-10 rounded-full border" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="flex items-center text-lg"><Palette className="w-5 h-5 mr-2" /> Live Preview</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="relative h-64 border rounded-lg overflow-hidden bg-white">
-                              <div className="absolute inset-0 flex flex-col">
-                                <div className="p-3 text-white" style={{ backgroundColor: state.customization.chatHeaderColor }}>
-                                  <div className="flex items-center gap-2">
-                                    {state.customization.avatarDataUrl ? (
-                                      <img src={state.customization.avatarDataUrl} alt="avatar" className="w-6 h-6 rounded-full border border-white/30" />
-                                    ) : (
-                                      <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-4 h-4 text-white" /></div>
-                                    )}
-                                    <span className="text-sm font-medium">{state.customization.headerTitle}</span>
-                                  </div>
-                                </div>
-                                <div className="flex-1 p-3 space-y-2 bg-secondary/30">
-                                  <div className={`max-w-[80%] px-3 py-2 text-sm text-white ${previewBubbleClass} ml-auto`} style={{ backgroundColor: state.customization.buttonColor }}>
-                                    Hi, do you offer 24/7 support?
-                                  </div>
-                                  <div className="text-[11px] text-muted-foreground">{state.customization.botName}</div>
-                                  <div className={`max-w-[80%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor: '#F1F5F9' }}>
-                                    {state.customization.greeting}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="absolute inset-0 pointer-events-none flex items-end justify-end p-4">
-                                {previewOpen && (
-                                  <div className={`pointer-events-auto bg-white rounded-xl shadow-xl border overflow-hidden preview-anim ${state.customization.openAnimation === 'fade' ? 'preview-anim-fade' : state.customization.openAnimation === 'slide-up' ? 'preview-anim-slide-up' : state.customization.openAnimation === 'slide-left' ? 'preview-anim-slide-left' : state.customization.openAnimation === 'zoom' ? 'preview-anim-zoom' : 'preview-anim-bounce'}`} style={{ width: state.customization.chatWidth, height: state.customization.chatHeight }}>
-                                    <div className="p-3 text-white" style={{ backgroundColor: state.customization.chatHeaderColor }}>
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                          {state.customization.avatarDataUrl ? (
-                                            <img src={state.customization.avatarDataUrl} alt="avatar" className="w-5 h-5 rounded-full border border-white/30" />
-                                          ) : (
-                                            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center"><Bot className="w-3 h-3 text-white" /></div>
-                                          )}
-                                          <span className="text-xs font-medium">{state.customization.headerTitle}</span>
-                                        </div>
-                                        <button className="text-white/90 text-xs" onClick={(e)=>{e.stopPropagation(); setPreviewOpen(false);}}>✕</button>
-                                      </div>
-                                    </div>
-                                    <div className="p-3 space-y-2 bg-secondary/30">
-                                      <div className="text-[11px] text-muted-foreground">{state.customization.botName}</div>
-                                      <div className={`max-w:[85%] px-3 py-2 text-sm ${previewBubbleClass}`} style={{ backgroundColor:'#F1F5F9' }}>{state.customization.greeting}</div>
-                                      <div className={`max-w-[65%] px-3 py-2 text-sm text-white ${previewBubbleClass}`} style={{ backgroundColor: state.customization.buttonColor }}>How can I help?</div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              <button
-                                aria-label="chat-button"
-                                className="absolute rounded-full shadow-lg border"
-                                style={{
-                                  width: buttonSizePx,
-                                  height: buttonSizePx,
-                                  right: 16,
-                                  bottom: 16,
-                                  backgroundColor: state.customization.buttonColor,
-                                }}
-                                onClick={()=>setPreviewOpen((v)=>!v)}
-                              >
-                                {state.customization.buttonIconUrl ? (
-                                  <img src={state.customization.buttonIconUrl} alt="icon" className="w-5 h-5 mx-auto" />
-                                ) : (
-                                  <MessageSquare className="w-5 h-5 text-white mx-auto" />
-                                )}
-                              </button>
-                              <p className="absolute left-3 bottom-3 text-[11px] text-muted-foreground">Click the button to preview chat UI</p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-3">
-                        <Button variant="outline" onClick={handlePrev} className="w-1/3">Back</Button>
-                        <Button onClick={saveCustomization} className="flex-1" disabled={saving}>{saving? 'Processing…' : 'Save Changes'}</Button>
-                      </div>
-                      <Button onClick={onLaunch} className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white">Launch NexaBot 🚀</Button>
-                    </div>
-
-                    {state.embedCode && (
-                      <div className="bg-secondary/30 rounded-lg p-4">
-                        <h4 className="font-semibold mb-2">Install Script</h4>
-                        <p className="text-sm text-muted-foreground mb-3">Paste this in head or before body end.</p>
-                        <div className="relative">
-                          <pre className="bg-background border rounded p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{state.embedCode}</pre>
-                          <Button size="sm" variant="outline" className="absolute top-2 right-2" onClick={copyEmbed}>
-                            {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />} {copied ? 'Copied' : 'Copy'}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+      <Card className="border-border/40">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-4 pb-4 border-b border-border/30">
+            <div className="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center text-white font-bold text-xl">
+              {businessName.charAt(0)}
+            </div>
+            <div>
+              <h3 className="font-semibold">{businessName}</h3>
+              <p className="text-sm text-neutral-400">
+                {user?.email || "user@nexabot.ai"}
+              </p>
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <CardHeader>
-                <CardTitle className="text-lg">Live Chat Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
-                  <div className="chat-bubble max-w-[80%] ml-auto">
-                    <p className="text-sm">Hi, do you offer 24/7 support?</p>
-                  </div>
-                  <div className="chat-bubble max-w-[80%]">
-                    <div className="flex items-center space-x-2">
-                      <Bot className="w-4 h-4 text-primary" />
-                      <div className="typing-dots"><span></span><span></span><span></span></div>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3 text-center">Complete setup to test your bot</p>
-              </CardContent>
-            </Card>
+          <div>
+            <Label>Business Name</Label>
+            <Input value={businessName} className="mt-1.5" />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input value={user?.email || ""} className="mt-1.5" disabled />
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <Badge
+              variant="secondary"
+              className="bg-primary/10 text-primary border-primary/20"
+            >
+              Beta Access
+            </Badge>
+            <Button
+              variant="outline"
+              className="border-border text-sm"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Sign Out
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-            <Card className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center text-lg">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  Analytics Preview
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Conversations</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Leads Captured</span>
-                  <span className="font-bold">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Avg Response Time</span>
-                  <span className="font-bold text-green-600">&lt; 1s</span>
-                </div>
-                <div className="pt-2 border-t">
-                  <Badge variant="secondary" className="w-full justify-center bg-orange-100 text-orange-700">
-                    <Clock className="w-3 h-3 mr-1" />
-                    Beta Mode Active
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+  return (
+    <div className="min-h-screen bg-sidebar-background flex">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex h-screen sticky top-0">
+        {renderSidebar()}
+      </div>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-border/40 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-secondary"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <LogoIcon className="w-7 h-7" />
+          <LogoText className="text-sm" />
+        </div>
+        <Badge
+          variant="secondary"
+          className="bg-primary/10 text-primary border-primary/20 text-[10px]"
+        >
+          Beta
+        </Badge>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <div className="relative w-64 bg-white border-r border-border/40 shadow-xl animate-slide-in">
+            <div className="flex items-center justify-between p-4 border-b border-border/30">
+              <div className="flex items-center gap-2.5">
+                <LogoIcon className="w-8 h-8" />
+                <LogoText className="text-base" />
+              </div>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-secondary"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="py-4 space-y-1 px-3">
+              {sidebarItems.map((item) => (
+                <button
+                  key={item.view}
+                  onClick={() => {
+                    setSidebarView(item.view);
+                    setMobileSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    sidebarView === item.view
+                      ? "bg-primary/10 text-primary"
+                      : "text-neutral-600 hover:bg-secondary"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="p-3 border-t border-border/30">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:bg-secondary hover:text-foreground transition-all"
+              >
+                <LogOut className="w-5 h-5" /> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 min-h-screen overflow-y-auto">
+        <div className="lg:pt-0 pt-16">
+          <div className="container mx-auto px-6 py-8 max-w-6xl">
+            {renderContent()}
           </div>
         </div>
       </div>

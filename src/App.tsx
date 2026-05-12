@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+// React hooks not needed here after removing the loading screen
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -27,66 +27,8 @@ import ErrorOverlay from "./components/ErrorOverlay";
 
 const queryClient = new QueryClient();
 
-const LoadingScreen = ({ onFinish }: any) => {
-  const [progressDone, setProgressDone] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setProgressDone(true);
-      setTimeout(() => {
-        onFinish();
-      }, 3000); // wait 3 seconds before showing main page
-    }, 3000); // progress duration (bar fills up in 3s)
-
-    return () => clearTimeout(timer);
-  }, [onFinish]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 1 }}
-      animate={{ opacity: progressDone ? 0 : 1 }}
-      transition={{ duration: 1.5, ease: "easeInOut" }}
-      className="flex h-screen w-full flex-col items-center justify-center 
-                 bg-gradient-to-b from-indigo-50 to-white text-gray-900"
-    >
-      <div className="flex flex-col items-center text-center space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-wide text-gray-800">
-            NexaBot
-          </h1>
-          <p className="mt-2 text-gray-500 text-sm">
-            Preparing your experience
-          </p>
-        </div>
-
-        <motion.div
-          className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 3, ease: "easeInOut" }}
-          />
-        </motion.div>
-
-        <p className="mt-6 text-sm text-indigo-600 animate-pulse">
-          NexaBot is making the website ready for you!
-        </p>
-      </div>
-    </motion.div>
-  );
-};
-
+// Loading screen removed to provide immediate access to the app
 const App = () => {
-  const [loadingDone, setLoadingDone] = useState(false);
-
-  if (!loadingDone) {
-    return <LoadingScreen onFinish={() => setLoadingDone(true)} />;
-  }
 
   return (
     <QueryClientProvider client={queryClient}>

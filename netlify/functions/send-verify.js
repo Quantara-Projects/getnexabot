@@ -1,5 +1,8 @@
 const crypto = require('crypto');
 const fetch = global.fetch || require('node-fetch');
+
+// Load local .env for development when available
+try { require('dotenv').config(); } catch (e) {}
 const nodemailer = require('nodemailer');
 
 exports.handler = async function(event) {

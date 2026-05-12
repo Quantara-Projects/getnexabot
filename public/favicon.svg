@@ -1,21 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <defs>
-    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="hsl(247 84% 57%)" />
-      <stop offset="100%" stop-color="hsl(267 83% 62%)" />
+    <linearGradient id="nb_outer" x1="22" y1="10" x2="106" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10D6CE" />
+      <stop offset="1" stop-color="#10B7B0" />
+    </linearGradient>
+    <linearGradient id="nb_inner" x1="36" y1="28" x2="92" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BFF6F4" />
+      <stop offset="1" stop-color="#B2F2EE" />
     </linearGradient>
   </defs>
 
-  <!-- Rounded square background with gradient -->
-  <rect x="2" y="2" width="20" height="20" rx="4" fill="url(#grad)" />
+  <!-- Outer hex -->
+  <path d="M64 8L112 36V92L64 120L16 92V36L64 8Z" fill="url(#nb_outer)" />
+  <!-- Inner hex -->
+  <path d="M64 26L98 46V82L64 102L30 82V46L64 26Z" fill="url(#nb_inner)" />
 
-  <!-- Bot icon (white stroke) -->
-  <g stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M12 8V4H8" />
-    <rect x="4" y="8" width="16" height="12" rx="2" />
-    <path d="M2 14h2" />
-    <path d="M20 14h2" />
-    <path d="M15 13v2" />
-    <path d="M9 13v2" />
-  </g>
+  <!-- Circuit + plus -->
+  <path d="M64 38V62" stroke="#12C8C1" stroke-width="8" stroke-linecap="round" />
+  <path d="M50 50H78" stroke="#12C8C1" stroke-width="8" stroke-linecap="round" />
+  <path d="M64 62V78" stroke="#12C8C1" stroke-width="6" stroke-linecap="round" />
+  <path d="M64 78L44 92" stroke="#12C8C1" stroke-width="6" stroke-linecap="round" />
+  <path d="M64 78L84 92" stroke="#12C8C1" stroke-width="6" stroke-linecap="round" />
+  <circle cx="64" cy="78" r="6" fill="#12C8C1" />
+  <circle cx="44" cy="92" r="6" fill="#12C8C1" />
+  <circle cx="84" cy="92" r="6" fill="#12C8C1" />
 </svg>
+

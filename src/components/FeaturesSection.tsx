@@ -1,39 +1,116 @@
-import { Bot, FileText, GraduationCap, MessageSquare, Shield, Palette } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Reveal } from '@/hooks/use-in-view';
+import {
+  Bot,
+  MessageSquare,
+  FileSpreadsheet,
+  GraduationCap,
+  Shield,
+  Palette,
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const features = [
-  { icon: MessageSquare, title: 'AI Chat Assistant', desc: 'Have natural conversations to brainstorm, write, or debug.' },
-  { icon: FileText, title: 'Document Analyzer', desc: 'Upload files or paste text and receive structured insights.' },
-  { icon: GraduationCap, title: 'Custom Bot Training', desc: 'Train your NexaBot with your company’s knowledge base.' },
-  { icon: MessageSquare, title: 'Omnichannel Support', desc: 'Deploy across website, Slack, WhatsApp, and more.' },
-  { icon: Shield, title: 'Security by Design', desc: 'End-to-end encryption, GDPR compliance, strict data policies.' },
-  { icon: Palette, title: 'Customizable UI', desc: 'Personalize appearance, greeting, and personality.' },
+  {
+    icon: Bot,
+    title: "AI Chat Assistant",
+    desc: "Natural conversations to answer questions, qualify leads, and resolve issues instantly.",
+    gradient: "from-primary/10 to-cyan-400/10",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+  },
+  {
+    icon: FileSpreadsheet,
+    title: "Document Analyzer",
+    desc: "Upload PDFs, DOCX, or TXT files. NexaBot learns your business data automatically.",
+    gradient: "from-emerald-500/10 to-teal-400/10",
+    iconBg: "bg-emerald-500/10",
+    iconColor: "text-emerald-600",
+  },
+  {
+    icon: GraduationCap,
+    title: "Custom Bot Training",
+    desc: "Train your AI on FAQs, website content, or company knowledge. No coding required.",
+    gradient: "from-violet-500/10 to-purple-400/10",
+    iconBg: "bg-violet-500/10",
+    iconColor: "text-violet-600",
+  },
+  {
+    icon: MessageSquare,
+    title: "Omnichannel Support",
+    desc: "Deploy across website widget, WhatsApp, Messenger, Slack, and Discord from one dashboard.",
+    gradient: "from-blue-500/10 to-sky-400/10",
+    iconBg: "bg-blue-500/10",
+    iconColor: "text-blue-600",
+  },
+  {
+    icon: Shield,
+    title: "Security by Design",
+    desc: "End-to-end encryption, GDPR compliance, and strict data privacy policies out of the box.",
+    gradient: "from-amber-500/10 to-orange-400/10",
+    iconBg: "bg-amber-500/10",
+    iconColor: "text-amber-600",
+  },
+  {
+    icon: Palette,
+    title: "Customizable UI",
+    desc: "Personalize your chatbot's appearance, greeting, colors, and behavior to match your brand.",
+    gradient: "from-rose-500/10 to-pink-400/10",
+    iconBg: "bg-rose-500/10",
+    iconColor: "text-rose-600",
+  },
 ];
 
 const FeaturesSection = () => {
   return (
-    <section id="features" className="py-20 bg-background">
+    <section
+      id="features"
+      className="py-24 bg-background relative overflow-hidden"
+    >
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+
       <div className="container mx-auto px-6">
-        <Reveal className="text-center mb-12">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-4">Features</h2>
-          <p className="text-xl text-muted-foreground">NexaBot isn’t just an AI chatbot—it’s a platform designed to adapt to your workflow.</p>
-        </Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Section Header */}
+        <div className="text-center mb-16 max-w-2xl mx-auto space-y-4 animate-fade-up">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/8 border border-primary/15 text-primary text-xs font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            Platform Features
+          </div>
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            Everything You Need to
+            <span className="gradient-text block">Automate Support</span>
+          </h2>
+          <p className="text-lg text-neutral-500 leading-relaxed">
+            NexaBot combines AI intelligence with omnichannel reach to deliver
+            instant, personalized customer support at scale.
+          </p>
+        </div>
+
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f, i) => (
-            <Reveal key={i}>
-              <Card className="h-full">
-                <CardHeader className="flex flex-row items-center space-x-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <f.icon className="w-5 h-5" />
+            <div
+              key={i}
+              className="animate-fade-up group"
+              style={{ animationDelay: `${i * 0.08}s` }}
+            >
+              <Card className="h-full border-border/50 hover:border-border/80 transition-all duration-300 hover:shadow-md">
+                <CardHeader className="flex flex-row items-center gap-4 pb-3">
+                  <div
+                    className={`w-11 h-11 rounded-xl ${f.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <f.icon className={`w-5.5 h-5.5 ${f.iconColor}`} />
                   </div>
-                  <CardTitle>{f.title}</CardTitle>
+                  <CardTitle className="text-base font-semibold">
+                    {f.title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">{f.desc}</p>
+                  <p className="text-sm text-neutral-500 leading-relaxed">
+                    {f.desc}
+                  </p>
                 </CardContent>
               </Card>
-            </Reveal>
+            </div>
           ))}
         </div>
       </div>

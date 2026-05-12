@@ -1,4 +1,4 @@
--- Supabase schema for NexaBot / Quantara
+-- Supabase schema for NexaBot / Trakory, Inc.
 -- Create core tables used by the application. Paste into Supabase SQL editor.
 
 -- users are managed by Supabase auth; these tables reference auth.users via user_id (uuid/text depending on setup)

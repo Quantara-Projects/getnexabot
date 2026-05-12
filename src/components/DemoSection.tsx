@@ -1,174 +1,288 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Bot, Send, User } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Send, User, Info } from "lucide-react";
+import { LogoIcon } from "@/components/ui/logo";
+
+interface Message {
+  type: "user" | "bot";
+  message: string;
+}
 
 const DemoSection = () => {
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
-      type: 'bot',
-      message: "Hi! I'm NexaBot. Ask me anything about our services!"
-    }
+      type: "bot",
+      message:
+        "Hi! I am NexaBot. Ask me anything about our platform, features, or how we can help your business.",
+    },
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  // System prompt that tells the AI who it is and what its rules are
+  const SYSTEM_PROMPT = `You are NexaBot, an AI-powered customer support assistant for a platform called NexaBot. 
+
+ABOUT NEXABOT:
+NexaBot is an AI-powered customer support and automation platform that helps businesses create intelligent chatbots for websites, online stores, communities, and messaging platforms. Designed for speed, scalability, and simplicity, NexaBot enables businesses to deliver instant 24/7 responses, automate repetitive tasks, capture leads, and improve customer engagement without needing a technical team.
+
+KEY FEATURES:
+- Website widget, WhatsApp, Messenger, Slack, Discord integration
+- AI-powered 24/7 customer support
+- Lead capture and automated notifications
+- Custom AI training using FAQs, documents, website content, or company knowledge
+- Omnichannel deployment from one dashboard
+- No-code setup and easy onboarding
+- Analytics and conversation insights
+- Enterprise-grade security and privacy
+- Web3 subscription payments
+- Support for zkLTC and LitVM chain payments
+
+YOUR PERSONALITY & RULES:
+- You are helpful, concise, and professional
+- You answer questions about NexaBot's features, pricing, setup process, integrations, and capabilities
+- If asked something outside of NexaBot's scope, politely redirect to NexaBot topics
+- Keep responses under 3 sentences when possible
+- Be enthusiastic about helping businesses
+- Do NOT make up features or capabilities not listed
+- Do NOT use emojis
+- Keep responses factual and clear
+
+RESPONSE FORMAT:
+- Answer directly and concisely
+- Use plain, professional language
+- No markdown formatting needed`;
+
+  useEffect(() => {
+    // Keep scrolling contained inside the chat panel (avoid scrolling the page)
+    const el = chatScrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   const sampleQuestions = [
     "Do you offer 24/7 support?",
-    "What are your pricing plans?",
+    "What platforms do you integrate with?",
     "How long does setup take?",
-    "Can you integrate with WhatsApp?"
+    "Can I train it on my data?",
   ];
 
-  const botResponses = {
-    "Do you offer 24/7 support?": "Yes! NexaBot provides 24/7 instant support. I never sleep and respond within seconds to help your customers anytime.",
-    "What are your pricing plans?": "We're currently in beta, so all features are FREE! When we launch, we'll have affordable plans starting at just $29/month.",
-    "How long does setup take?": "Super fast! Most businesses are up and running in under 5 minutes. Just upload your FAQs or website link and you're ready to go!",
-    "Can you integrate with WhatsApp?": "Absolutely! NexaBot works with your website, WhatsApp Business API, and Facebook Messenger - all from one dashboard."
+  const callOpenRouter = async (userMessage: string): Promise<string> => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMessage,
+          systemPrompt: SYSTEM_PROMPT,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("API request failed");
+      }
+
+      const data = await response.json();
+      return data.reply;
+    } catch (error) {
+      console.error("OpenRouter error:", error);
+      return "I apologize, but I am having trouble connecting right now. Please try again in a moment.";
+    }
   };
 
-  const handleSendMessage = (message?: string) => {
+  const handleSendMessage = async (message?: string) => {
     const messageToSend = message || inputValue;
     if (!messageToSend.trim()) return;
 
-    // Add user message
-    setMessages(prev => [...prev, { type: 'user', message: messageToSend }]);
-    setInputValue('');
+    setMessages((prev) => [...prev, { type: "user", message: messageToSend }]);
+    setInputValue("");
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const response = await callOpenRouter(messageToSend);
+      setMessages((prev) => [...prev, { type: "bot", message: response }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "bot",
+          message:
+            "I apologize, but I encountered an error. Please try asking your question again.",
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-      const response = botResponses[messageToSend as keyof typeof botResponses] || 
-        "That's a great question! NexaBot learns from your business data to provide accurate, helpful responses to all customer inquiries. Want to see how it works? Sign up for free beta access!";
-      
-      setMessages(prev => [...prev, { type: 'bot', message: response }]);
-    }, 1500);
+    }
   };
 
   return (
-    <section id="demo" className="py-20 bg-background">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16 animate-fade-in-up">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-            Try NexaBot{' '}
-            <span className="gradient-text">Live Demo</span>
+    <section id="demo" className="py-24 bg-secondary/20 relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0">
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-radial from-primary/5 to-transparent rounded-full blur-3xl" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        {/* Section Header */}
+        <div className="text-center mb-16 max-w-2xl mx-auto space-y-4 animate-fade-up">
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            Try NexaBot
+            <span className="gradient-text block">Live Demo</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Experience the power of instant AI responses. Ask any question and see how NexaBot would handle it for your business.
+          <p className="text-lg text-neutral-500 leading-relaxed">
+            Experience the power of instant AI responses. Ask any question and
+            see how NexaBot would handle it for your business.
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-2xl animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <div
+          className="max-w-4xl mx-auto animate-fade-up"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <Card className="border-border/40 shadow-xl overflow-hidden">
             <CardContent className="p-0">
-              <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="grid grid-cols-1 lg:grid-cols-5">
                 {/* Chat Interface */}
-                <div className="p-6">
+                <div className="lg:col-span-3 p-6 border-b lg:border-b-0 lg:border-r border-border/30">
                   {/* Chat Header */}
-                  <div className="flex items-center justify-between pb-4 border-b mb-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-primary to-violet-600 rounded-full flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-white" />
+                  <div className="flex items-center justify-between pb-4 border-b border-border/30 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center shadow-sm">
+                        <svg viewBox="0 0 20 20" className="w-5 h-5 fill-white">
+                          <path d="M10 1L17.5 5.5V14.5L10 19L2.5 14.5V5.5L10 1Z" />
+                          <path
+                            d="M10 3.5L15 6.5V13.5L10 16.5L5 13.5V6.5L10 3.5Z"
+                            className="fill-primary/20"
+                          />
+                        </svg>
                       </div>
                       <div>
-                        <h3 className="font-semibold">NexaBot Demo</h3>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs text-muted-foreground">Online</span>
+                        <div className="text-sm font-semibold text-foreground">
+                          NexaBot Live
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-success-500 animate-pulse" />
+                          <span className="text-xs text-neutral-400">
+                            AI Powered
+                          </span>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/8 border border-primary/15 text-primary text-xs font-medium">
+                      <Info className="w-3 h-3" />
+                      <span>Live</span>
                     </div>
                   </div>
 
                   {/* Chat Messages */}
-                  <div className="space-y-4 mb-6 h-80 overflow-y-auto">
+                  <div
+                    ref={chatScrollRef}
+                    className="space-y-4 mb-4 h-[340px] overflow-y-auto custom-scrollbar pr-1"
+                  >
                     {messages.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`}>
-                        <div className={`max-w-[80%] p-3 rounded-2xl ${
-                          msg.type === 'user' 
-                            ? 'bg-primary text-white rounded-br-md' 
-                            : 'bg-secondary rounded-bl-md'
-                        }`}>
-                          <div className="flex items-start space-x-2">
-                            {msg.type === 'bot' && <Bot className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />}
-                            <p className="text-sm leading-relaxed">{msg.message}</p>
-                            {msg.type === 'user' && <User className="w-4 h-4 mt-0.5 text-white/80 flex-shrink-0" />}
+                      <div
+                        key={index}
+                        className={`flex items-end gap-2 ${
+                          msg.type === "user" ? "justify-end" : "justify-start"
+                        } animate-fade-up`}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {msg.type === "bot" && (
+                          <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center flex-shrink-0">
+                            <LogoIcon className="w-5 h-5" />
                           </div>
+                        )}
+
+                        <div
+                          className={`max-w-[85%] p-3 rounded-xl ${
+                            msg.type === "user"
+                              ? "bg-primary text-white rounded-br-md shadow-sm"
+                              : "bg-secondary rounded-bl-md border border-border/30"
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed">
+                            {msg.message}
+                          </p>
                         </div>
+
+                        {msg.type === "user" && (
+                          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <User className="w-4 h-4 text-white/80" />
+                          </div>
+                        )}
                       </div>
                     ))}
-                    
-                    {/* Typing indicator */}
-                    {isTyping && (
-                      <div className="flex justify-start animate-fade-in-up">
-                        <div className="bg-secondary rounded-2xl rounded-bl-md p-3 max-w-[80%]">
-                          <div className="flex items-center space-x-2">
-                            <Bot className="w-4 h-4 text-primary" />
-                            <div className="typing-dots">
-                              <span></span>
-                              <span></span>
-                              <span></span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Chat Input */}
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2">
                       <Input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="Type your question..."
-                        className="flex-1"
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Ask NexaBot anything..."
+                        className="flex-1 border-border/50 focus-visible:ring-primary/30 bg-background"
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && !isTyping && handleSendMessage()
+                        }
                         disabled={isTyping}
                       />
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={() => handleSendMessage()}
                         disabled={!inputValue.trim() || isTyping}
-                        className="bg-gradient-to-r from-primary to-violet-600"
+                        className="bg-primary text-white hover:bg-primary/90 shadow-sm disabled:opacity-50 h-10 w-10 p-0"
                       >
                         <Send className="w-4 h-4" />
                       </Button>
                     </div>
-                    
-                    <div className="text-xs text-muted-foreground text-center">
-                      This is a demo. Real NexaBot learns from your specific business data.
-                    </div>
+
+                    <p className="text-xs text-neutral-400 text-center">
+                      This demo uses AI. Responses are generated in real-time.
+                    </p>
                   </div>
                 </div>
 
-                {/* Quick Questions */}
-                <div className="bg-secondary/30 p-6 border-l">
-                  <h4 className="font-semibold mb-4">Try these sample questions:</h4>
-                  <div className="space-y-3">
-                    {sampleQuestions.map((question, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="w-full justify-start text-left h-auto p-3 text-sm hover:bg-primary/5"
-                        onClick={() => handleSendMessage(question)}
-                        disabled={isTyping}
-                      >
-                        {question}
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-primary/5 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <Bot className="w-5 h-5 text-primary mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium mb-1">Pro Tip:</p>
-                        <p className="text-muted-foreground">
-                          NexaBot learns from YOUR business data, making responses even more accurate and personalized for your customers.
-                        </p>
+                {/* Quick Questions Panel */}
+                <div className="lg:col-span-2 p-6 bg-secondary/20">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-1">
+                        Try asking:
+                      </h4>
+                      <p className="text-xs text-neutral-400">
+                        Click a question to see NexaBot respond
+                      </p>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {sampleQuestions.map((question, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          className="w-full justify-start text-left h-auto p-3 text-sm font-normal border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                          onClick={() => handleSendMessage(question)}
+                          disabled={isTyping}
+                        >
+                          {question}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                      <div className="flex items-start gap-3">
+                        <LogoIcon className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-foreground mb-1">
+                            Powered by AI
+                          </p>
+                          <p className="text-neutral-500 leading-relaxed text-xs">
+                            NexaBot learns from your business data to provide
+                            accurate, personalized responses for your customers.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

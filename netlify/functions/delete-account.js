@@ -1,5 +1,8 @@
 const fetch = global.fetch || require('node-fetch');
 
+// Load local .env for development when available
+try { require('dotenv').config(); } catch (e) {}
+
 exports.handler = async function(event) {
   try {
     if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
