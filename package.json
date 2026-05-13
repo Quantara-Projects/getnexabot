@@ -9,7 +9,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start:functions": "node local-netlify-functions-server.cjs",
+    "verify:functions": "node scripts/verify-functions.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -67,9 +69,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
-    "zod": "^4.1.5"
-  },
-  "dependencies": {
+    "zod": "^4.1.5",
     "node-fetch": "^2.6.7",
     "dotenv": "^16.3.1"
   },

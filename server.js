@@ -6,6 +6,9 @@ import fs from 'fs';
 const app = express();
 const port = process.env.PORT || 3000;
 
+let viteServer = null;
+let httpServer = null;
+
 // Resolve dist relative to the current working directory to match Render's build location
 const distDir = path.resolve(process.cwd(), 'dist');
 
@@ -14,6 +17,22 @@ if (fs.existsSync(distDir)) {
   app.use(express.static(distDir, { maxAge: '1d' }));
 } else {
   console.warn('[server] dist directory not found at', distDir);
+}
+
+// In development, create and mount Vite dev middleware so HMR/ws work when using this Express server
+async function setupVite() {
+  if (process.env.NODE_ENV === 'production') return;
+  try {
+    const { createServer: createViteServer } = await import('vite');
+    viteServer = await createViteServer({
+      server: { middlewareMode: true, host: '::' },
+      appType: 'custom',
+    });
+    app.use(viteServer.middlewares);
+    console.log('[server] Vite dev middleware mounted');
+  } catch (e) {
+    console.error('[server] failed to start Vite dev middleware', e && e.stack || e);
+  }
 }
 
 // Basic health check
@@ -84,7 +103,31 @@ app.get('*', (req, res) => {
   res.status(500).send('Build not found. Run "npm run build" to generate the dist/ directory.');
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-  console.log(`[server] serving from ${distDir}`);
-});
+// Start server after vite middleware is ready in dev so HMR works
+(async () => {
+  await setupVite();
+  httpServer = app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+    console.log(`[server] serving from ${distDir}`);
+  });
+
+  // Forward websocket upgrades to Vite's ws server when available
+  if (viteServer && httpServer) {
+    try {
+      const wsServer = viteServer.ws && (viteServer.ws.server || viteServer.ws);
+      if (wsServer && typeof wsServer.handleUpgrade === 'function') {
+        httpServer.on('upgrade', (req, socket, head) => {
+          try {
+            wsServer.handleUpgrade(req, socket, head, (ws) => {
+              if (wsServer.emit) wsServer.emit('connection', ws, req);
+            });
+          } catch (err) {
+            // ignore
+          }
+        });
+      }
+    } catch (e) {
+      // no-op
+    }
+  }
+})();
